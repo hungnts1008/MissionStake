@@ -20,18 +20,27 @@ import {
   TrendingUp,
   Settings
 } from 'lucide-react';
+import { UserPreferencesEditor } from './UserPreferencesEditor';
 
 type ProfileProps = {
   user: User;
   onNavigate: (page: Page, missionId?: string) => void;
   setUser: (user: User) => void;
   missions: Mission[];
+  onPreferencesChange?: (preferences: any) => void;
+  userPreferences?: any;
 };
 
-export function Profile({ user, onNavigate, setUser, missions }: ProfileProps) {
+export function Profile({ user, onNavigate, setUser, missions, onPreferencesChange, userPreferences }: ProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user.name);
   const [editedBio, setEditedBio] = useState(user.bio);
+
+  const handlePreferencesSave = (prefs: any) => {
+    if (onPreferencesChange) {
+      onPreferencesChange(prefs);
+    }
+  };
 
   const userMissions = missions.filter(m => m.userId === user.id);
   const activeMissions = userMissions.filter(m => m.status === 'active');
@@ -423,12 +432,20 @@ export function Profile({ user, onNavigate, setUser, missions }: ProfileProps) {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Cài đặt tài khoản</CardTitle>
-                <CardDescription>Quản lý thông tin và tùy chọn của bạn</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            <div className="space-y-6">
+              {/* AI Preferences Section */}
+              <UserPreferencesEditor 
+                onSave={handlePreferencesSave}
+                initialPreferences={userPreferences}
+              />
+
+              {/* Account Settings Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Cài đặt tài khoản</CardTitle>
+                  <CardDescription>Quản lý thông tin và tùy chọn của bạn</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
@@ -472,7 +489,8 @@ export function Profile({ user, onNavigate, setUser, missions }: ProfileProps) {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

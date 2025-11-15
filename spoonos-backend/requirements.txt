@@ -1,0 +1,25 @@
+# FastAPI Core (install first)
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.0
+pydantic-settings==2.5.0
+
+# Environment & Utilities
+python-dotenv==1.0.1
+python-multipart==0.0.17
+requests>=2.31.0
+
+# AI/LLM Libraries
+openai>=1.0.0
+anthropic>=0.25.0
+google-generativeai>=0.3.0
+
+# Database & Caching
+redis==5.2.0
+
+# NEO Integration (optional - install manually if needed)
+# neo-mamba==2.0.0
+# neo3-boa==1.5.0
+
+# SpoonOS Core (install manually after basic setup)
+# git+https://github.com/XSpoonAi/spoon-core.git

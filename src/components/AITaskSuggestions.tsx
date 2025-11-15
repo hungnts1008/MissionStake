@@ -15,7 +15,9 @@ import {
   Lightbulb,
   Award,
   ChevronRight,
-  Filter
+  Filter,
+  Coins,
+  Check
 } from 'lucide-react';
 import { TaskRecommendationAI } from '../services/TaskRecommendationAI';
 import { TaskProgressionService } from '../services/TaskProgressionService';
@@ -28,6 +30,12 @@ import {
 } from '../types/ai-types';
 import { User } from '../App';
 import type { Mission, Page } from '../App';
+import { 
+  personalizedMissionService, 
+  MissionSuggestion, 
+  UserPreferences 
+} from '../services/PersonalizedMissionService';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 
 type Props = {
   user: User;
@@ -35,6 +43,7 @@ type Props = {
   // NOTE: Callback để thêm mission mới khi người dùng nhận nhiệm vụ
   onAcceptTask: (mission: Mission) => void;
   setUser: (user: User) => void;
+  userPreferences?: UserPreferences;
 };
 
 // Mock user profile - Trong thực tế sẽ lấy từ database
@@ -120,11 +129,17 @@ const timeOfDayLabels: Record<TimeOfDay, string> = {
 
 const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
-export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: Props) {
+export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, userPreferences }: Props) {
   const [userProfile] = useState<UserProfile>(() => createMockUserProfile(user));
   const [suggestedTasks, setSuggestedTasks] = useState<SuggestedTask[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all');
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  
+  // Personalized missions state
+  const [personalizedMissions, setPersonalizedMissions] = useState<MissionSuggestion[]>([]);
+  const [loadingPersonalized, setLoadingPersonalized] = useState(false);
+  const [rerollsRemaining, setRerollsRemaining] = useState(3);
+  const [showPersonalized, setShowPersonalized] = useState(false);
 
   useEffect(() => {
     // Sử dụng TaskProgressionService để lấy available tasks
@@ -157,11 +172,76 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
     });
     
     setSuggestedTasks(limited.slice(0, 20));
-  }, [userProfile]);
+    
+    // NOTE: Reroll không dùng localStorage - reset khi reload trang
+    setRerollsRemaining(3); // Always 3 rerolls (reset on page reload)
+  }, [userProfile, user.id]);
+
+  // Generate personalized missions
+  const handleGeneratePersonalized = async () => {
+    try {
+      setLoadingPersonalized(true);
+      
+      // Check if user has set preferences
+      if (!userPreferences || userPreferences.interests.length === 0) {
+        alert('Please set your preferences in Profile → Settings tab first!');
+        onNavigate('profile');
+        return;
+      }
+      
+      const missions = await personalizedMissionService.generatePersonalizedMissions(userPreferences, 3);
+      setPersonalizedMissions(missions);
+      setShowPersonalized(true);
+    } catch (error) {
+      console.error('Error generating personalized missions:', error);
+      alert('Failed to generate personalized missions. Please try again.');
+    } finally {
+      setLoadingPersonalized(false);
+    }
+  };
+
+  // Reroll a specific mission
+  const handleRerollMission = async (index: number) => {
+    if (rerollsRemaining <= 0) {
+      alert('You have used all your rerolls for today!');
+      return;
+    }
+
+    try {
+      setLoadingPersonalized(true);
+      
+      if (!userPreferences || userPreferences.interests.length === 0) {
+        alert('Preferences not found. Please set them in your Profile.');
+        return;
+      }
+      
+      const currentMission = personalizedMissions[index];
+      
+      const newMission = await personalizedMissionService.rerollMission(
+        currentMission,
+        userPreferences,
+        'User requested different mission'
+      );
+      
+      // Update missions array
+      const updatedMissions = [...personalizedMissions];
+      updatedMissions[index] = newMission;
+      setPersonalizedMissions(updatedMissions);
+      
+      // Track reroll and update counter
+      personalizedMissionService.trackReroll(user.id);
+      setRerollsRemaining(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error rerolling mission:', error);
+      alert('Failed to reroll mission. Please try again.');
+    } finally {
+      setLoadingPersonalized(false);
+    }
+  };
 
   const filteredTasks = selectedCategory === 'all' 
     ? suggestedTasks 
-    : suggestedTasks.filter(task => task.category === selectedCategory);
+    : suggestedTasks.filter(t => t.category === selectedCategory);
 
   const handleAcceptTask = (task: SuggestedTask) => {
     // Calculate stake based on task difficulty and points
@@ -261,39 +341,45 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50">
+      {/* Header with Gradient */}
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl">
-                  <Sparkles className="text-white" size={24} />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-semibold text-gray-800">
-                    AI Đề xuất nhiệm vụ
-                  </h1>
-                  <p className="text-gray-500 mt-1">
-                    Các nhiệm vụ được cá nhân hóa dựa trên level và mục tiêu của bạn
-                  </p>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl shadow-xl">
+                <Sparkles className="text-white" size={32} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white drop-shadow-lg flex items-center gap-2">
+                  🤖 AI Đề xuất nhiệm vụ
+                </h1>
+                <p className="text-white/90 mt-1 font-medium">
+                  Các nhiệm vụ được cá nhân hóa dựa trên level và mục tiêu của bạn
+                </p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => onNavigate('dashboard')}
-            >
-              ← Quay lại
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl border border-white/30">
+                <div className="flex items-center gap-2 text-white">
+                  <Coins className="size-5" />
+                  <span className="font-bold text-lg">{user.coins.toLocaleString()}</span>
+                </div>
+              </div>
+              <Button 
+                onClick={() => onNavigate('dashboard')}
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-2 border-white/40 font-semibold px-6 h-11"
+              >
+                ← Quay lại
+              </Button>
+            </div>
           </div>
 
           {/* Top 4 Categories by Level */}
           <div className="mt-6">
-            <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
-              <TrendingUp size={16} />
-              Kỹ năng hàng đầu của bạn
+            <h3 className="text-sm font-bold text-white/90 mb-3 flex items-center gap-2">
+              <TrendingUp size={18} />
+              🏆 Kỹ năng hàng đầu của bạn
             </h3>
             <div className="grid grid-cols-4 gap-4">
               {topCategories.map(({ category, level }) => {
@@ -303,20 +389,20 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
                 return (
                   <Card 
                     key={category} 
-                    className="border-2 hover:shadow-lg transition-shadow cursor-pointer"
+                    className="bg-white/95 backdrop-blur-sm border-2 border-white/50 hover:shadow-xl hover:scale-105 transition-all cursor-pointer group"
                     onClick={() => setSelectedCategory(category)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-semibold text-sm capitalize">{category}</span>
-                        <Badge variant="secondary" className="text-xs font-bold">
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-bold text-base capitalize text-gray-800 group-hover:text-purple-600 transition-colors">{category}</span>
+                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 text-xs font-bold px-2.5 py-1">
                           Lv {level}
                         </Badge>
                       </div>
-                      <Progress value={progress} className="h-2 mb-2" />
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{tasksInCategory} nhiệm vụ</span>
-                        <span className="font-medium">{Math.floor(progress)}% → {level + 1}</span>
+                      <Progress value={progress} className="h-2.5 mb-3" />
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600 font-medium">📋 {tasksInCategory} nhiệm vụ</span>
+                        <span className="font-bold text-purple-600">{Math.floor(progress)}% → {level + 1}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -330,26 +416,35 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filters */}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter size={20} className="text-gray-500" />
-            <span className="font-medium text-gray-700">Lọc theo danh mục:</span>
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
+              <Filter size={20} className="text-white" />
+            </div>
+            <span className="font-bold text-gray-800 text-lg">🎯 Lọc theo danh mục</span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <Button
-              variant={selectedCategory === 'all' ? 'default' : 'outline'}
+              variant="outline"
               onClick={() => setSelectedCategory('all')}
-              size="sm"
+              className={`h-11 px-6 font-semibold transition-all ${
+                selectedCategory === 'all' 
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-lg scale-105' 
+                  : 'border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+              }`}
             >
               Tất cả
             </Button>
             {categories.map((category) => (
               <Button
                 key={category}
-                variant={selectedCategory === category ? 'default' : 'outline'}
+                variant="outline"
                 onClick={() => setSelectedCategory(category)}
-                size="sm"
-                className="capitalize"
+                className={`h-11 px-6 font-semibold capitalize transition-all ${
+                  selectedCategory === category 
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-lg scale-105' 
+                    : 'border-2 border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+                }`}
               >
                 {category}
               </Button>
@@ -357,63 +452,290 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
           </div>
         </div>
 
-        {/* Suggested Tasks Grid */}
-        <div className="grid gap-4">
-          {filteredTasks.map((task) => (
-            <Card 
-              key={task.id} 
-              className={`border-2 hover:shadow-lg transition-all cursor-pointer ${
-                expandedTask === task.id ? 'ring-2 ring-indigo-500' : ''
-              }`}
-              onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className={categoryColors[task.category]}>
-                        {task.category}
-                      </Badge>
-                      <Badge variant="secondary" className="font-semibold">
-                        Lv {userProfile.currentLevel[task.category] || 1}
-                      </Badge>
-                      <Badge className={difficultyColors[task.difficulty]} variant="outline">
-                        {difficultyLabels[task.difficulty]}
-                      </Badge>
-                      <Badge variant="outline" className="bg-gradient-to-r from-yellow-100 to-amber-100">
-                        <Award size={12} className="mr-1" />
-                        +{task.points} điểm
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl">{task.title}</CardTitle>
-                    <CardDescription className="mt-2">
-                      {task.description}
-                    </CardDescription>
+        {/* Personalized Missions Section */}
+        <div className="mb-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border-2 border-purple-200 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2.5 rounded-xl">
+                    <Sparkles className="text-white" size={24} />
                   </div>
-                  <div className="ml-4">
-                    <div className="bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg">
-                      <span className="text-2xl font-bold">{task.points}</span>
-                      <span className="text-xs">điểm</span>
-                    </div>
+                  ✨ Nhiệm vụ cá nhân hóa cho bạn
+                </h2>
+                <p className="text-base text-gray-600 mt-2 ml-12 font-medium">
+                  Được tạo dựa trên sở thích và mục tiêu của bạn bằng AI Gemini
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                {showPersonalized && (
+                  <div className="bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2 rounded-xl border-2 border-purple-300">
+                    <span className="text-sm font-bold text-purple-700">🎲 Rerolls: {rerollsRemaining}/3</span>
                   </div>
-                </div>
+                )}
+                <Button
+                  onClick={handleGeneratePersonalized}
+                  disabled={loadingPersonalized}
+                  className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-700 hover:via-pink-700 hover:to-rose-700 text-white font-bold px-6 h-12 shadow-lg"
+                >
+                  {loadingPersonalized ? (
+                    <>
+                      <RefreshCw className="animate-spin mr-2" size={18} />
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2" size={18} />
+                      {showPersonalized ? '🔄 Tạo lại tất cả' : '✨ Tạo nhiệm vụ cá nhân hóa'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
 
-                {/* Quick Info */}
-                <div className="flex items-center gap-4 mt-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Clock size={16} />
-                    <span>{task.estimatedTime} phút</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Target size={16} />
-                    <span>Level {task.requiredLevel}+</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <TrendingUp size={16} />
-                    <span>Phù hợp {task.matchScore}%</span>
-                  </div>
+            {showPersonalized && personalizedMissions.length > 0 && (
+              <div className="grid gap-5 mt-6">
+                {personalizedMissions.map((mission, index) => {
+                  // Map difficulty levels
+                  const difficultyMap: Record<string, 'beginner' | 'intermediate' | 'advanced' | 'expert'> = {
+                    'easy': 'beginner',
+                    'medium': 'intermediate',
+                    'hard': 'advanced'
+                  };
+                  const mappedDifficulty = difficultyMap[mission.difficulty] || 'intermediate';
+                  
+                  return (
+                    <Card key={mission.id} className="border-2 border-purple-300 bg-gradient-to-br from-white to-purple-50/30 hover:shadow-2xl hover:scale-[1.01] transition-all group">
+                      {/* Top gradient bar */}
+                      <div className="h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500" />
+                      
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between gap-6">
+                          <div className="flex-1 space-y-4">
+                            {/* Title and badges */}
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-purple-600 transition-colors">{mission.title}</h3>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge className={`${categoryColors[mission.category as TaskCategory]} border font-semibold px-3 py-1`}>
+                                  {mission.category}
+                                </Badge>
+                                <Badge className={`${difficultyColors[mappedDifficulty]} border font-semibold px-3 py-1`}>
+                                  {difficultyLabels[mappedDifficulty]}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            {/* Description */}
+                            <p className="text-gray-700 leading-relaxed">{mission.description}</p>
+                            
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-3">
+                                <div className="flex items-center gap-2 text-blue-700">
+                                  <Clock size={18} />
+                                  <div>
+                                    <p className="text-xs font-semibold text-blue-600">Thời gian</p>
+                                    <p className="font-bold">{mission.estimatedTime} phút</p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-3">
+                                <div className="flex items-center gap-2 text-purple-700">
+                                  <Target size={18} />
+                                  <div>
+                                    <p className="text-xs font-semibold text-purple-600">Kinh nghiệm</p>
+                                    <p className="font-bold">{mission.rewards.xp} XP</p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-200 rounded-xl p-3">
+                                <div className="flex items-center gap-2 text-amber-700">
+                                  <Coins size={18} />
+                                  <div>
+                                    <p className="text-xs font-semibold text-amber-600">Phần thưởng</p>
+                                    <p className="font-bold">{mission.rewards.coins} coins</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Tags */}
+                            <div className="flex flex-wrap gap-2">
+                              {mission.tags.map((tag, i) => (
+                                <span key={i} className="text-xs bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 font-semibold px-3 py-1.5 rounded-full border border-purple-200">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+
+                            {/* Reasoning */}
+                            {mission.reasoning && (
+                              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                  <span className="font-bold text-purple-600">💡 Tại sao phù hợp với bạn:</span>
+                                  <br />
+                                  <span className="mt-1 block">{mission.reasoning}</span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex flex-col gap-3 min-w-[140px]">
+                            <Button
+                              onClick={() => {
+                                const task: SuggestedTask = {
+                                  id: mission.id,
+                                  title: mission.title,
+                                  description: mission.description,
+                                  category: mission.category as TaskCategory,
+                                  difficulty: mappedDifficulty,
+                                  estimatedTime: mission.estimatedTime,
+                                  points: mission.rewards.xp,
+                                  requiredLevel: 1,
+                                  prerequisites: [],
+                                  suggestedTimeSlots: [{
+                                    day: new Date().getDay(),
+                                    time: 'morning',
+                                    reason: 'Personalized mission'
+                                  }],
+                                  matchScore: 95,
+                                  tips: mission.tags,
+                                };
+                                handleAcceptTask(task);
+                              }}
+                              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold h-11 shadow-lg"
+                            >
+                              <Check size={18} className="mr-2" />
+                              Nhận
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              onClick={() => handleRerollMission(index)}
+                              disabled={loadingPersonalized || rerollsRemaining <= 0}
+                              className="border-2 border-purple-300 hover:bg-purple-50 hover:border-purple-400 font-semibold h-11"
+                            >
+                              {loadingPersonalized ? (
+                                <RefreshCw className="animate-spin" size={18} />
+                              ) : (
+                                <>
+                                  <RefreshCw size={18} className="mr-2" />
+                                  Reroll
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {!showPersonalized && (
+              <div className="text-center py-12 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-dashed border-purple-300">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={40} className="text-white" />
                 </div>
-              </CardHeader>
+                <p className="text-base font-semibold text-gray-700 mb-2">✨ Nhấn nút bên trên để tạo nhiệm vụ cá nhân hóa!</p>
+                <p className="text-sm text-gray-600">Hãy thiết lập sở thích trong Hồ sơ cá nhân để có gợi ý tốt nhất 🎯</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Suggested Tasks Grid */}
+        <div>
+          <div className="flex items-center gap-2 mb-6">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-2 rounded-lg">
+              <Target size={20} className="text-white" />
+            </div>
+            <h2 className="font-bold text-gray-800 text-xl">📋 Tất cả nhiệm vụ được đề xuất</h2>
+          </div>
+          
+          <div className="grid gap-5">
+            {filteredTasks.map((task) => (
+              <Card 
+                key={task.id} 
+                className={`border-2 hover:shadow-2xl hover:scale-[1.01] transition-all cursor-pointer bg-gradient-to-br from-white to-gray-50 ${
+                  expandedTask === task.id ? 'ring-2 ring-purple-400 shadow-2xl scale-[1.01]' : 'border-gray-200'
+                }`}
+                onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+              >
+                {/* Top gradient bar */}
+                <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+                
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between gap-6">
+                    <div className="flex-1 space-y-3">
+                      {/* Badges */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={`${categoryColors[task.category]} border font-semibold px-3 py-1`}>
+                          {task.category}
+                        </Badge>
+                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 font-semibold px-3 py-1">
+                          Lv {userProfile.currentLevel[task.category] || 1}
+                        </Badge>
+                        <Badge className={`${difficultyColors[task.difficulty]} border-2 font-semibold px-3 py-1`}>
+                          {difficultyLabels[task.difficulty]}
+                        </Badge>
+                        <Badge className="bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-amber-200 text-amber-700 font-bold px-3 py-1">
+                          <Award size={14} className="mr-1" />
+                          +{task.points} XP
+                        </Badge>
+                      </div>
+                      
+                      {/* Title */}
+                      <CardTitle className="text-xl font-bold text-gray-800">{task.title}</CardTitle>
+                      
+                      {/* Description */}
+                      <CardDescription className="text-base text-gray-600 leading-relaxed">
+                        {task.description}
+                      </CardDescription>
+                    </div>
+                    
+                    {/* Points badge */}
+                    <div className="ml-4 flex-shrink-0">
+                      <div className="bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 text-white rounded-2xl w-20 h-20 flex flex-col items-center justify-center shadow-xl border-2 border-yellow-300">
+                        <span className="text-2xl font-bold">{task.points}</span>
+                        <span className="text-xs font-semibold">XP</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Info Stats */}
+                  <div className="grid grid-cols-3 gap-3 mt-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <Clock size={18} />
+                        <div>
+                          <p className="text-xs font-semibold text-blue-600">Thời gian</p>
+                          <p className="font-bold">{task.estimatedTime} phút</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-purple-700">
+                        <Target size={18} />
+                        <div>
+                          <p className="text-xs font-semibold text-purple-600">Yêu cầu</p>
+                          <p className="font-bold">Level {task.requiredLevel}+</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-green-700">
+                        <TrendingUp size={18} />
+                        <div>
+                          <p className="text-xs font-semibold text-green-600">Phù hợp</p>
+                          <p className="font-bold">{task.matchScore}%</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
 
               {/* Expanded Content */}
               {expandedTask === task.id && (
@@ -535,15 +857,15 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
                   {/* Action Buttons */}
                   <div className="flex gap-3 mt-6">
                     <Button 
-                      className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                      className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold h-12 shadow-lg"
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         handleAcceptTask(task);
                       }}
                       disabled={!!task.prerequisites}
                     >
-                      <CheckCircle2 size={16} className="mr-2" />
-                      Nhận nhiệm vụ
+                      <CheckCircle2 size={18} className="mr-2" />
+                      ✅ Nhận nhiệm vụ
                     </Button>
                     <Button 
                       variant="outline"
@@ -551,6 +873,7 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
                         e.stopPropagation();
                         setExpandedTask(null);
                       }}
+                      className="border-2 border-gray-300 hover:bg-gray-100 font-semibold h-12 px-6"
                     >
                       Đóng
                     </Button>
@@ -558,16 +881,19 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser }: P
                 </CardContent>
               )}
             </Card>
-          ))}
+            ))}
+          </div>
         </div>
 
         {filteredTasks.length === 0 && (
-          <div className="text-center py-12">
-            <Sparkles size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              Không có nhiệm vụ phù hợp
+          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-300">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Sparkles size={48} className="text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-700 mb-3">
+              🔍 Không có nhiệm vụ phù hợp
             </h3>
-            <p className="text-gray-500">
+            <p className="text-gray-600 text-base">
               Hãy thử chọn danh mục khác hoặc cập nhật lịch trình của bạn
             </p>
           </div>

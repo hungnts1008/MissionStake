@@ -119,21 +119,30 @@ export function Leaderboard({ user, onNavigate }: LeaderboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50">
+      {/* Header with Gradient */}
+      <header className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 sticky top-0 z-10 shadow-lg">
+        <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
               size="icon"
               onClick={() => onNavigate('dashboard')}
+              className="text-white hover:bg-white/20"
             >
               <ArrowLeft className="size-5" />
             </Button>
             <div className="flex-1">
-              <h2>Bảng Xếp Hạng</h2>
-              <p className="text-sm text-gray-600">Cạnh tranh lành mạnh với cộng đồng</p>
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                🏆 Bảng Xếp Hạng
+              </h2>
+              <p className="text-sm text-white/90">Cạnh tranh lành mạnh với cộng đồng</p>
+            </div>
+            <div className="hidden md:flex items-center gap-4 text-white">
+              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                <Coins className="size-5" />
+                <span className="font-semibold">{user.coins.toLocaleString()}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -214,29 +223,32 @@ export function Leaderboard({ user, onNavigate }: LeaderboardProps) {
 
         {/* Leaderboard Tabs */}
         <Tabs defaultValue="coins" className="space-y-6">
-          <TabsList className="bg-white grid w-full grid-cols-4">
-            <TabsTrigger value="coins">
+          <TabsList className="bg-white/90 backdrop-blur-sm shadow-lg border-2 border-orange-100 grid w-full grid-cols-4 p-2 rounded-2xl">
+            <TabsTrigger value="coins" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg">
               <Coins className="size-4 mr-2" />
               Coins
             </TabsTrigger>
-            <TabsTrigger value="streak">
+            <TabsTrigger value="streak" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-400 data-[state=active]:to-red-500 data-[state=active]:text-white data-[state=active]:shadow-lg">
               <Flame className="size-4 mr-2" />
               Streak
             </TabsTrigger>
-            <TabsTrigger value="reputation">
+            <TabsTrigger value="reputation" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-400 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg">
               <Award className="size-4 mr-2" />
               Uy tín
             </TabsTrigger>
-            <TabsTrigger value="missions">
+            <TabsTrigger value="missions" className="rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-400 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg">
               <Trophy className="size-4 mr-2" />
               Nhiệm vụ
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="coins" className="space-y-3">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-yellow-100">
               <CardHeader>
-                <CardTitle>Xếp hạng theo Coins</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Coins className="size-6 text-yellow-500" />
+                  Xếp hạng theo Coins
+                </CardTitle>
                 <CardDescription>Người dùng có nhiều coins nhất</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -278,9 +290,12 @@ export function Leaderboard({ user, onNavigate }: LeaderboardProps) {
           </TabsContent>
 
           <TabsContent value="streak" className="space-y-3">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-orange-100">
               <CardHeader>
-                <CardTitle>Xếp hạng theo Streak</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Flame className="size-6 text-orange-500" />
+                  Xếp hạng theo Streak
+                </CardTitle>
                 <CardDescription>Người dùng duy trì streak dài nhất</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -319,9 +334,12 @@ export function Leaderboard({ user, onNavigate }: LeaderboardProps) {
           </TabsContent>
 
           <TabsContent value="reputation" className="space-y-3">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-purple-100">
               <CardHeader>
-                <CardTitle>Xếp hạng theo Uy tín</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="size-6 text-purple-500" />
+                  Xếp hạng theo Uy tín
+                </CardTitle>
                 <CardDescription>Người dùng có uy tín cao nhất</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -360,9 +378,12 @@ export function Leaderboard({ user, onNavigate }: LeaderboardProps) {
           </TabsContent>
 
           <TabsContent value="missions" className="space-y-3">
-            <Card>
+            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-indigo-100">
               <CardHeader>
-                <CardTitle>Xếp hạng theo Nhiệm vụ</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="size-6 text-indigo-500" />
+                  Xếp hạng theo Nhiệm vụ
+                </CardTitle>
                 <CardDescription>Người dùng hoàn thành nhiều nhiệm vụ nhất</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">

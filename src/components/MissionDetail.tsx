@@ -36,6 +36,68 @@ type MissionDetailProps = {
   onUpdateMission: (missionId: string, updates: Partial<Mission>) => void;
 };
 
+type Prediction = {
+  missionId: string;
+  userId: string;
+  prediction: 'success' | 'fail';
+  stake: number;
+  timestamp: number;
+};
+
+// Helper function to process predictions when mission completes
+const processPredictions = (missionId: string, actualResult: 'success' | 'fail') => {
+  // Get all user IDs who might have predictions (from localStorage keys)
+  const allKeys = Object.keys(localStorage);
+  const predictionKeys = allKeys.filter(key => key.startsWith('user_predictions_'));
+  
+  let totalRewards = 0;
+  let correctPredictions = 0;
+  
+  predictionKeys.forEach(key => {
+    const userId = key.replace('user_predictions_', '');
+    const predictionsData = localStorage.getItem(key);
+    
+    if (predictionsData) {
+      const predictions: Prediction[] = JSON.parse(predictionsData);
+      const userPrediction = predictions.find(p => p.missionId === missionId);
+      
+      if (userPrediction) {
+        // Check if prediction was correct
+        if (userPrediction.prediction === actualResult) {
+          // Correct prediction - user wins 2x stake
+          const reward = userPrediction.stake * 2;
+          totalRewards += reward;
+          correctPredictions++;
+          
+          // Save pending reward to be claimed when user logs in
+          const pendingRewardsKey = `pending_rewards_${userId}`;
+          const existingRewards = localStorage.getItem(pendingRewardsKey);
+          const rewardsArray = existingRewards ? JSON.parse(existingRewards) : [];
+          
+          rewardsArray.push({
+            missionId,
+            amount: reward,
+            type: 'prediction',
+            timestamp: Date.now(),
+            claimed: false
+          });
+          
+          localStorage.setItem(pendingRewardsKey, JSON.stringify(rewardsArray));
+        }
+        // If wrong prediction, user loses stake (already deducted when making prediction)
+        
+        // Mark prediction as processed
+        userPrediction.timestamp = -Math.abs(userPrediction.timestamp); // Negative means processed
+        localStorage.setItem(key, JSON.stringify(predictions));
+      }
+    }
+  });
+  
+  if (correctPredictions > 0) {
+    console.log(`✅ Processed ${correctPredictions} correct predictions. Total rewards: ${totalRewards} coins`);
+  }
+};
+
 export function MissionDetail({ missionId, user, onNavigate, setUser, missions, previousPage, onUpdateMission }: MissionDetailProps) {
   const mission = missions.find(m => m.id === missionId);
   const [evidenceDescription, setEvidenceDescription] = useState('');
@@ -45,6 +107,36 @@ export function MissionDetail({ missionId, user, onNavigate, setUser, missions, 
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Check and claim pending rewards on component mount
+  useEffect(() => {
+    const pendingRewardsKey = `pending_rewards_${user.id}`;
+    const pendingRewardsData = localStorage.getItem(pendingRewardsKey);
+    
+    if (pendingRewardsData) {
+      const rewards = JSON.parse(pendingRewardsData);
+      const unclaimedRewards = rewards.filter((r: any) => !r.claimed);
+      
+      if (unclaimedRewards.length > 0) {
+        const totalReward = unclaimedRewards.reduce((sum: number, r: any) => sum + r.amount, 0);
+        
+        // Award coins to user
+        setUser({
+          ...user,
+          coins: user.coins + totalReward
+        });
+        
+        // Mark all as claimed
+        rewards.forEach((r: any) => r.claimed = true);
+        localStorage.setItem(pendingRewardsKey, JSON.stringify(rewards));
+        
+        // Show notification
+        setTimeout(() => {
+          alert(`🎁 Bạn có ${unclaimedRewards.length} dự đoán chính xác!\n\n💰 Nhận được ${totalReward} coins từ các dự đoán thành công!`);
+        }, 500);
+      }
+    }
+  }, [user.id]);
 
   // Simulate AI verification after 2 seconds when new evidence is submitted
   useEffect(() => {
@@ -386,6 +478,9 @@ export function MissionDetail({ missionId, user, onNavigate, setUser, missions, 
           submittedForReview: true,
           finalEvaluation
         });
+        
+        // Process predictions - reward users who predicted success
+        processPredictions(missionId, 'success');
 
         alert(`🎉 Chúc mừng! Nhiệm vụ hoàn thành!\n\n📊 Điểm tổng thể: ${aiEvaluation.overallScore}/100\n✅ ${approvedEvidences.length}/${mission.evidences.length} bằng chứng được duyệt\n\n💰 Bạn nhận được ${reward} coins\n🏅 +50 uy tín\n\n🤖 ${finalEvaluation.aiAssessment}`);
       } else {
@@ -396,6 +491,9 @@ export function MissionDetail({ missionId, user, onNavigate, setUser, missions, 
           submittedForReview: true,
           finalEvaluation
         });
+        
+        // Process predictions - reward users who predicted fail
+        processPredictions(missionId, 'fail');
 
         alert(`😔 Rất tiếc! Nhiệm vụ chưa đạt yêu cầu.\n\n📊 Điểm tổng thể: ${aiEvaluation.overallScore}/100 (cần ≥70)\n❌ Chỉ có ${approvedEvidences.length}/${mission.evidences.length} bằng chứng được duyệt\n\n💸 Mất ${mission.stake} coins đã đặt cược\n\n🤖 ${finalEvaluation.aiAssessment}`);
       }
@@ -485,7 +583,7 @@ export function MissionDetail({ missionId, user, onNavigate, setUser, missions, 
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={(e) => {
+                              onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 setUploadedImage(null);
                                 setUploadedFileName('');
@@ -988,7 +1086,7 @@ export function MissionDetail({ missionId, user, onNavigate, setUser, missions, 
                   <div 
                     key={m.id}
                     className="p-3 border rounded-lg hover:border-indigo-300 cursor-pointer transition-colors"
-                    onClick={() => onNavigate('mission', m.id)}
+                    onClick={() => onNavigate('feed')}
                   >
                     <p className="text-sm line-clamp-2 mb-2">{m.title}</p>
                     <div className="flex items-center justify-between text-xs text-gray-600">

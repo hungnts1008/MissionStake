@@ -27,6 +27,14 @@ export type User = {
   };
 };
 
+export type Prediction = {
+  userId: string;
+  userName: string;
+  prediction: 'success' | 'fail';
+  stake: number;
+  timestamp: number;
+};
+
 export type Mission = {
   id: string;
   title: string;
@@ -45,6 +53,7 @@ export type Mission = {
   participants: number;
   supporters: number;
   evidences: Evidence[];
+  predictions?: Prediction[]; // Track all predictions for this mission
   submittedForReview?: boolean;
   finalEvaluation?: {
     overallScore: number; // 0-100
@@ -97,6 +106,8 @@ function App() {
   const [missions, setMissions] = useState<Mission[]>(mockMissions);
   // NOTE: Track trang trước đó để biết nên quay về đâu
   const [previousPage, setPreviousPage] = useState<Page>('dashboard');
+  // NOTE: Track user preferences (không lưu localStorage, reset khi reload)
+  const [userPreferences, setUserPreferences] = useState<any>(null);
 
   // NOTE: Hàm để thêm mission mới (được gọi từ AI suggestions hoặc CreateMission)
   const addMission = (mission: Mission) => {
@@ -146,7 +157,14 @@ function App() {
         <CreateMission user={currentUser} onNavigate={navigateTo} setUser={setCurrentUser} />
       )}
       {currentPage === 'feed' && (
-        <MissionFeed user={currentUser} onNavigate={navigateTo} missions={missions} />
+        <MissionFeed 
+          user={currentUser} 
+          onNavigate={navigateTo} 
+          missions={missions}
+          setUser={setCurrentUser}
+          setMissions={setMissions}
+          addMission={addMission}
+        />
       )}
       {currentPage === 'mission' && selectedMissionId && (
         <MissionDetail 
@@ -163,7 +181,14 @@ function App() {
         <Leaderboard user={currentUser} onNavigate={navigateTo} />
       )}
       {currentPage === 'profile' && (
-        <Profile user={currentUser} onNavigate={navigateTo} setUser={setCurrentUser} missions={missions} />
+        <Profile 
+          user={currentUser} 
+          onNavigate={navigateTo} 
+          setUser={setCurrentUser} 
+          missions={missions}
+          onPreferencesChange={setUserPreferences}
+          userPreferences={userPreferences}
+        />
       )}
       {currentPage === 'wallet' && (
         <Wallet user={currentUser} onNavigate={navigateTo} />
@@ -174,6 +199,7 @@ function App() {
           onNavigate={navigateTo}
           onAcceptTask={addMission}
           setUser={setCurrentUser}
+          userPreferences={userPreferences}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { User } from '../App';
 import { Mail, Lock, Target, Coins } from 'lucide-react';
+import { MOCK_USER } from './mockData';
 
 type LoginPageProps = {
   onLogin: (user: User) => void;
@@ -18,44 +19,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login
-    const mockUser: User = {
-      id: '1',
-      name: name || 'Người dùng mẫu',
-      email: email || 'user@example.com',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-      coins: 5000,
-      badges: ['🔥 Chiến binh', '⭐ Người kiên trì', '🎯 Đạt mục tiêu'],
-      bio: 'Đang trên hành trình tự hoàn thiện bản thân',
-      streak: 15,
-      reputation: 850,
-      verificationStats: {
-        totalVotes: 0,
-        correctVotes: 0,
-        accuracy: 0
-      }
-    };
-    onLogin(mockUser);
+    // Always login as MOCK_USER
+    onLogin(MOCK_USER);
   };
 
   const handleGoogleLogin = () => {
-    const mockUser: User = {
-      id: '1',
-      name: 'Nguyễn Văn A',
-      email: 'nguyenvana@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-      coins: 5000,
-      badges: ['🔥 Chiến binh', '⭐ Người kiên trì', '🎯 Đạt mục tiêu'],
-      bio: 'Đang trên hành trình tự hoàn thiện bản thân',
-      streak: 15,
-      reputation: 850,
-      verificationStats: {
-        totalVotes: 0,
-        correctVotes: 0,
-        accuracy: 0
-      }
-    };
-    onLogin(mockUser);
+    // Always login as MOCK_USER
+    onLogin(MOCK_USER);
   };
 
   return (

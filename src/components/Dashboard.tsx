@@ -96,211 +96,116 @@ export function Dashboard({ user, onNavigate, setUser, missions }: DashboardProp
           <p className="text-gray-600">Hãy tiếp tục hành trình chinh phục mục tiêu của bạn</p>
         </div>
 
-        {/* Stats Cards - Redesigned */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Total Coins */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 shadow-lg transition-shadow duration-300">
-            {/* Animated shine effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            
-            <CardHeader className="pb-2 relative z-10">
-              <CardDescription className="text-yellow-50 font-medium text-xs">Tổng Coins</CardDescription>
-              <CardTitle className="text-white flex items-center gap-2 text-2xl">
-                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
-                  <Coins className="size-5" />
-                </div>
-                {user.coins.toLocaleString()}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 pb-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-yellow-50 flex items-center gap-1">
-                  <TrendingUp className="size-3" />
-                  +500 tuần này
-                </p>
-                <div className="text-xl">💰</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Missions */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-lg transition-shadow duration-300">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            
-            <CardHeader className="pb-2 relative z-10">
-              <CardDescription className="text-indigo-50 font-medium text-xs">Nhiệm vụ đang hoạt động</CardDescription>
-              <CardTitle className="text-white flex items-center gap-2 text-2xl">
-                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
-                  <Target className="size-5" />
-                </div>
-                {activeMissions.length}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 pb-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-indigo-50 flex items-center gap-1">
-                  <Award className="size-3" />
-                  78% hoàn thành
-                </p>
-                <div className="text-xl">🎯</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Current Streak */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-orange-400 via-red-500 to-pink-500 shadow-lg transition-shadow duration-300">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            
-            {/* Flame animation dots */}
-            <div className="absolute top-2 right-2 flex gap-1">
-              <div className="w-1 h-1 bg-yellow-300 rounded-full animate-pulse" />
-              <div className="w-1 h-1 bg-yellow-300 rounded-full animate-pulse delay-75" />
-              <div className="w-1 h-1 bg-yellow-300 rounded-full animate-pulse delay-150" />
-            </div>
-            
-            <CardHeader className="pb-2 relative z-10">
-              <CardDescription className="text-orange-50 font-medium text-xs">Streak hiện tại</CardDescription>
-              <CardTitle className="text-white flex items-center gap-2 text-2xl">
-                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
-                  <Flame className="size-5" />
-                </div>
-                {user.streak} ngày
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 pb-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-orange-50 flex items-center gap-1">
-                  <Trophy className="size-3" />
-                  Kỷ lục: 30 ngày
-                </p>
-                <div className="text-xl">🔥</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Reputation */}
-          <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 shadow-lg transition-shadow duration-300">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-            
-            {/* Star particles */}
-            <div className="absolute top-4 right-4 text-yellow-200 text-xs animate-bounce">⭐</div>
-            <div className="absolute bottom-4 left-4 text-yellow-300 text-xs animate-bounce delay-100">✨</div>
-            
-            <CardHeader className="pb-2 relative z-10">
-              <CardDescription className="text-emerald-50 font-medium text-xs">Uy tín</CardDescription>
-              <CardTitle className="text-white flex items-center gap-2 text-2xl">
-                <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
-                  <Award className="size-5" />
-                </div>
-                {user.reputation}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 pb-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-emerald-50 flex items-center gap-1">
-                  <TrendingUp className="size-3" />
-                  Top 15% cộng đồng
-                </p>
-                <div className="text-xl">🏅</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions - Redesigned */}
+        {/* Quick Actions - Enhanced with Animations */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {/* AI Suggestions - Featured */}
+          {/* AI Suggestions - Featured with floating animation */}
           <Card 
-            className="relative overflow-hidden cursor-pointer group hover:shadow-2xl transition-all duration-300 border-0 bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600"
+            className="relative overflow-hidden cursor-pointer group hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 animate-pulse-slow"
             onClick={() => onNavigate('ai-suggestions')}
           >
-            {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Animated Background Waves */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/30 to-pink-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             
-            {/* Sparkle Effects */}
-            <div className="absolute top-4 right-4 text-yellow-300 animate-pulse">✨</div>
-            <div className="absolute bottom-4 left-4 text-yellow-200 animate-pulse delay-75">⭐</div>
+            {/* Floating Sparkle Effects */}
+            <div className="absolute top-6 right-6 text-yellow-300 text-2xl animate-bounce">✨</div>
+            <div className="absolute bottom-6 left-6 text-yellow-200 text-xl animate-bounce delay-100">⭐</div>
+            <div className="absolute top-1/2 right-1/4 text-pink-200 text-sm animate-pulse delay-200">💫</div>
             
-            <CardContent className="pt-8 pb-8 relative z-10">
-              <div className="flex flex-col items-center text-center gap-3">
+            <CardContent className="pt-10 pb-10 relative z-10">
+              <div className="flex flex-col items-center text-center gap-4">
                 {/* Icon with glow effect */}
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white/30 rounded-full blur-xl" />
-                  <div className="relative bg-white/20 backdrop-blur-sm p-4 rounded-2xl">
-                    <Sparkles className="size-8 text-white" />
+                <div className="relative group-hover:rotate-12 transition-transform duration-500">
+                  <div className="absolute inset-0 bg-white/40 rounded-full blur-2xl animate-pulse" />
+                  <div className="relative bg-white/25 backdrop-blur-sm p-5 rounded-3xl shadow-2xl group-hover:scale-110 transition-transform">
+                    <Sparkles className="size-10 text-white drop-shadow-lg" />
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-1">AI Gợi Ý Nhiệm Vụ</h3>
-                  <p className="text-sm text-white/80">Cá nhân hóa dành cho bạn</p>
+                  <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">AI Gợi Ý Nhiệm Vụ</h3>
+                  <p className="text-base text-white/90 font-medium">Cá nhân hóa dành cho bạn</p>
                 </div>
                 
-                {/* Badge */}
-                <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30">
-                  🤖 Thông minh
+                {/* Enhanced Badge */}
+                <Badge className="bg-white/25 text-white border-white/40 hover:bg-white/35 px-4 py-1 text-sm font-semibold shadow-lg">
+                  🤖 AI Thông minh
                 </Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Explore Feed */}
+          {/* Explore Feed - Enhanced */}
           <Card 
-            className="relative overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300 border-2 border-indigo-200 hover:border-indigo-400"
+            className="relative overflow-hidden cursor-pointer group hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
             onClick={() => onNavigate('feed')}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-blue-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Animated Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/30 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             
-            <CardContent className="pt-8 pb-8 relative z-10">
-              <div className="flex flex-col items-center text-center gap-3">
-                {/* Icon */}
-                <div className="bg-gradient-to-br from-indigo-100 to-blue-100 p-4 rounded-2xl group-hover:scale-110 transition-transform">
-                  <List className="size-7 text-indigo-600" />
+            {/* Floating Icons */}
+            <div className="absolute top-6 right-6 text-2xl animate-bounce delay-100">🎯</div>
+            <div className="absolute bottom-6 left-6 text-xl animate-pulse">📋</div>
+            
+            <CardContent className="pt-10 pb-10 relative z-10">
+              <div className="flex flex-col items-center text-center gap-4">
+                {/* Icon with scale animation */}
+                <div className="relative group-hover:-rotate-12 transition-transform duration-500">
+                  <div className="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse" />
+                  <div className="bg-white/25 backdrop-blur-sm p-5 rounded-3xl shadow-2xl group-hover:scale-110 transition-transform">
+                    <List className="size-10 text-white drop-shadow-lg" />
+                  </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">Khám Phá</h3>
-                  <p className="text-sm text-gray-600">Nhiệm vụ từ cộng đồng</p>
+                  <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Khám Phá</h3>
+                  <p className="text-base text-white/90 font-medium">Nhiệm vụ từ cộng đồng</p>
                 </div>
                 
-                {/* Stats */}
-                <div className="flex items-center gap-2 text-xs">
-                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                    <TrendingUp className="size-3 mr-1" />
-                    Mới nhất
-                  </Badge>
-                </div>
+                {/* Stats Badge */}
+                <Badge className="bg-white/25 text-white border-white/40 hover:bg-white/35 px-4 py-1 text-sm font-semibold shadow-lg">
+                  <TrendingUp className="size-4 mr-1" />
+                  Đang thịnh hành
+                </Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Leaderboard */}
+          {/* Leaderboard - Enhanced */}
           <Card 
-            className="relative overflow-hidden cursor-pointer group hover:shadow-xl transition-all duration-300 border-2 border-amber-200 hover:border-amber-400"
+            className="relative overflow-hidden cursor-pointer group hover:shadow-2xl hover:scale-105 transition-all duration-500 border-0 bg-gradient-to-br from-yellow-500 via-orange-500 to-red-500"
             onClick={() => onNavigate('leaderboard')}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-yellow-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Animated Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/30 to-orange-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             
-            <CardContent className="pt-8 pb-8 relative z-10">
-              <div className="flex flex-col items-center text-center gap-3">
-                {/* Icon with trophy */}
-                <div className="bg-gradient-to-br from-amber-100 to-yellow-100 p-4 rounded-2xl group-hover:scale-110 transition-transform relative">
-                  <Trophy className="size-7 text-amber-600" />
-                  <div className="absolute -top-1 -right-1 text-xl">🏆</div>
+            {/* Floating Trophy Effects */}
+            <div className="absolute top-6 right-6 text-3xl animate-bounce">🏆</div>
+            <div className="absolute bottom-6 left-6 text-xl animate-pulse delay-75">🥇</div>
+            <div className="absolute top-1/3 left-1/4 text-lg animate-bounce delay-150">⭐</div>
+            
+            <CardContent className="pt-10 pb-10 relative z-10">
+              <div className="flex flex-col items-center text-center gap-4">
+                {/* Icon with rotation animation */}
+                <div className="relative group-hover:rotate-12 transition-transform duration-500">
+                  <div className="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse" />
+                  <div className="bg-white/25 backdrop-blur-sm p-5 rounded-3xl shadow-2xl group-hover:scale-110 transition-transform">
+                    <Trophy className="size-10 text-white drop-shadow-lg" />
+                  </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-1">Bảng Xếp Hạng</h3>
-                  <p className="text-sm text-gray-600">Cạnh tranh & vinh danh</p>
+                  <h3 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">Bảng Xếp Hạng</h3>
+                  <p className="text-base text-white/90 font-medium">Cạnh tranh & vinh danh</p>
                 </div>
                 
-                {/* Stats */}
-                <div className="flex items-center gap-2 text-xs">
-                  <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                    <Award className="size-3 mr-1" />
-                    Top {user.reputation}
-                  </Badge>
-                </div>
+                {/* Rank Badge */}
+                <Badge className="bg-white/25 text-white border-white/40 hover:bg-white/35 px-4 py-1 text-sm font-semibold shadow-lg">
+                  <Award className="size-4 mr-1" />
+                  Top {user.reputation}
+                </Badge>
               </div>
             </CardContent>
           </Card>

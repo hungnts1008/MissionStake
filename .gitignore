@@ -34,3 +34,10 @@ lerna-debug.log*
 
 # OS
 Thumbs.db
+
+# Hardhat / Blockchain
+cache/
+artifacts/
+typechain-types/
+deployments/
+.openzeppelin/

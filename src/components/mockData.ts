@@ -1,5 +1,39 @@
-import { Mission } from '../App';
+import { Mission, User } from '../App';
 
+// ============================================
+// MOCK USER - 1 người dùng duy nhất cho test
+// ============================================
+export const MOCK_USER: User = {
+  id: 'user_1',
+  name: 'Test User',
+  email: 'testuser@missionstake.com',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
+  coins: 15000,
+  badges: ['🏆 Early Adopter', '🔥 7 Day Streak', '⭐ Top Contributor'],
+  bio: 'Đam mê phát triển bản thân và công nghệ blockchain',
+  streak: 7,
+  reputation: 850,
+  verificationStats: {
+    totalVotes: 42,
+    correctVotes: 38,
+    accuracy: 90.5
+  }
+};
+
+// NEO Wallet Info
+export const MOCK_WALLET = {
+  address: 'NWWkFU3dKWTHNpxjz8MRgt5eKe1Ld834xQ',
+  balance: {
+    neo: 0.0000005,
+    gas: 50.0
+  },
+  network: 'NEO N3 TestNet',
+  rpc: 'http://seed1t5.neo.org:20332'
+};
+
+// ============================================
+// MOCK MISSIONS
+// ============================================
 export const mockMissions: Mission[] = [
   {
     id: '1',
@@ -73,8 +107,8 @@ export const mockMissions: Mission[] = [
     startDate: '01/11/2024',
     endDate: '31/01/2025',
     mode: 'personal',
-    userId: '1',
-    userName: 'Người dùng mẫu',
+    userId: 'user_1',
+    userName: 'Test User',
     userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
     status: 'active',
     progress: 40,
