@@ -9,6 +9,7 @@ import { Profile } from './components/Profile';
 import { Wallet } from './components/Wallet';
 import { AITaskSuggestions } from './components/AITaskSuggestions';
 import { mockMissions } from './components/mockData';
+import { MissionSuggestion } from './services/PersonalizedMissionService';
 
 export type User = {
   id: string;
@@ -108,6 +109,8 @@ function App() {
   const [previousPage, setPreviousPage] = useState<Page>('dashboard');
   // NOTE: Track user preferences (không lưu localStorage, reset khi reload)
   const [userPreferences, setUserPreferences] = useState<any>(null);
+  // NOTE: Track AI generated missions (không lưu localStorage, reset khi reload)
+  const [aiGeneratedMissions, setAiGeneratedMissions] = useState<MissionSuggestion[]>([]);
 
   // NOTE: Hàm để thêm mission mới (được gọi từ AI suggestions hoặc CreateMission)
   const addMission = (mission: Mission) => {
@@ -137,6 +140,9 @@ function App() {
     if (missionId) {
       setSelectedMissionId(missionId);
     }
+    
+    // Scroll to top of page when navigating
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (!currentUser) {
@@ -200,6 +206,8 @@ function App() {
           onAcceptTask={addMission}
           setUser={setCurrentUser}
           userPreferences={userPreferences}
+          aiGeneratedMissions={aiGeneratedMissions}
+          setAiGeneratedMissions={setAiGeneratedMissions}
         />
       )}
     </div>

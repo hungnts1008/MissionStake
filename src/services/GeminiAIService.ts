@@ -1,7 +1,7 @@
+/// <reference types="vite/client" />
 import { Evidence } from '../App';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export type AIVerificationResult = {
   result: 'approve' | 'reject';
@@ -23,80 +23,35 @@ export async function verifyEvidenceWithAI(
   missionTitle: string,
   missionDescription: string
 ): Promise<AIVerificationResult> {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
-    console.warn('Gemini API key not configured. Using simulated AI verification.');
-    return simulateAIVerification(evidence);
-  }
-
   try {
-    const prompt = `Bạn là một AI chuyên đánh giá bằng chứng hoàn thành nhiệm vụ.
-
-NHIỆM VỤ:
-Tiêu đề: ${missionTitle}
-Mô tả: ${missionDescription}
-
-BẰNG CHỨNG CẦN ĐÁNH GIÁ:
-- Loại: ${evidence.type === 'image' ? 'Có hình ảnh' : 'Chỉ có mô tả'}
-- Mô tả: ${evidence.description}
-- Ngày nộp: ${evidence.date}
-
-YÊU CẦU:
-1. Đánh giá bằng chứng này có phù hợp với nhiệm vụ không (approve hoặc reject)
-2. Cho điểm độ tin cậy từ 0-100
-3. Giải thích lý do ngắn gọn (1-2 câu)
-
-Trả về JSON theo format:
-{
-  "result": "approve" hoặc "reject",
-  "confidence": số từ 0-100,
-  "reason": "lý do ngắn gọn"
-}`;
-
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`${API_BASE_URL}/api/gemini/verify-evidence`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 200,
-        }
+        evidenceType: evidence.type === 'image' ? 'Có hình ảnh' : 'Chỉ có mô tả',
+        description: evidence.description,
+        date: evidence.date,
+        missionTitle: missionTitle,
+        missionDescription: missionDescription
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`Backend API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!text) {
-      throw new Error('No response from Gemini');
-    }
-
-    // Extract JSON from response (might be wrapped in markdown code blocks)
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Invalid JSON response from AI');
-    }
-
-    const result = JSON.parse(jsonMatch[0]);
     
     return {
-      result: result.result === 'approve' ? 'approve' : 'reject',
-      confidence: Math.min(100, Math.max(0, result.confidence)),
-      reason: result.reason || 'Không có lý do cụ thể'
+      result: data.result === 'approve' ? 'approve' : 'reject',
+      confidence: data.confidence,
+      reason: data.reason
     };
 
   } catch (error) {
-    console.error('Error calling Gemini API:', error);
+    console.error('Error calling Backend API:', error);
     console.warn('Falling back to simulated AI verification');
     return simulateAIVerification(evidence);
   }
@@ -111,90 +66,34 @@ export async function evaluateMissionWithAI(
   evidences: Evidence[],
   totalDays: number
 ): Promise<AIFinalEvaluationResult> {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'your_api_key_here') {
-    console.warn('Gemini API key not configured. Using simulated evaluation.');
-    return simulateFinalEvaluation(evidences);
-  }
-
   try {
-    const approvedEvidences = evidences.filter(e => e.status === 'approved');
-    const evidenceSummary = approvedEvidences.map((e, idx) => 
-      `${idx + 1}. [${e.date}] ${e.description} (AI confidence: ${e.aiVerification?.confidence || 0}%)`
-    ).join('\n');
-
-    const prompt = `Bạn là một AI chuyên đánh giá hoàn thành nhiệm vụ tự hoàn thiện.
-
-NHIỆM VỤ:
-Tiêu đề: ${missionTitle}
-Mô tả: ${missionDescription}
-Thời gian cam kết: ${totalDays} ngày
-
-BẰNG CHỨNG ĐÃ ĐƯỢC DUYỆT (${approvedEvidences.length}/${evidences.length}):
-${evidenceSummary || 'Không có bằng chứng nào được duyệt'}
-
-YÊU CẦU:
-1. Đánh giá tổng thể mức độ hoàn thành nhiệm vụ (điểm 0-100)
-2. Nhận xét chi tiết về chất lượng thực hiện
-3. Quyết định PASS (≥70 điểm) hay FAIL (<70 điểm)
-
-Tiêu chí chấm điểm:
-- Số lượng bằng chứng so với thời gian cam kết
-- Chất lượng bằng chứng (độ tin cậy AI)
-- Tính nhất quán và kiên trì
-- Mức độ đạt mục tiêu ban đầu
-
-Trả về JSON theo format:
-{
-  "overallScore": số từ 0-100,
-  "aiAssessment": "nhận xét chi tiết 2-3 câu",
-  "passedRequirements": true hoặc false
-}`;
-
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`${API_BASE_URL}/api/gemini/evaluate-mission`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 300,
-        }
+        missionTitle: missionTitle,
+        missionDescription: missionDescription,
+        evidences: evidences,
+        totalDays: totalDays
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`Backend API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!text) {
-      throw new Error('No response from Gemini');
-    }
-
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Invalid JSON response from AI');
-    }
-
-    const result = JSON.parse(jsonMatch[0]);
     
     return {
-      overallScore: Math.min(100, Math.max(0, result.overallScore)),
-      aiAssessment: result.aiAssessment || 'Không có nhận xét',
-      passedRequirements: result.passedRequirements === true
+      overallScore: data.overallScore,
+      aiAssessment: data.aiAssessment,
+      passedRequirements: data.passedRequirements
     };
 
   } catch (error) {
-    console.error('Error calling Gemini API for final evaluation:', error);
+    console.error('Error calling Backend API for final evaluation:', error);
     console.warn('Falling back to simulated evaluation');
     return simulateFinalEvaluation(evidences);
   }

@@ -46,9 +46,9 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
 
   // Predefined interest options
   const predefinedInterests = [
-    'Coding', 'Fitness', 'Reading', 'Music', 'Gaming',
-    'Art', 'Travel', 'Photography', 'Cooking', 'Writing',
-    'Sports', 'Learning Languages', 'Meditation', 'Business', 'Science'
+    'Lập trình', 'Thể thao', 'Đọc sách', 'Âm nhạc', 'Game',
+    'Nghệ thuật', 'Du lịch', 'Nhiếp ảnh', 'Nấu ăn', 'Viết lách',
+    'Học ngoại ngữ', 'Thiền định', 'Kinh doanh', 'Khoa học', 'Đầu tư'
   ];
 
   // NOTE: Không load từ localStorage - data sẽ reset khi reload
@@ -127,10 +127,10 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-6 h-6 text-blue-500" />
-            Personal Preferences
+            Tùy Chỉnh Cá Nhân
           </CardTitle>
           <CardDescription>
-            Set your preferences to get personalized AI mission recommendations
+            Thiết lập sở thích của bạn để nhận gợi ý nhiệm vụ từ AI
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -138,15 +138,15 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
           <div className="space-y-3">
             <Label className="text-base font-semibold flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
-              Your Interests
+              Sở Thích
             </Label>
             <p className="text-sm text-muted-foreground">
-              Select from popular interests or add your own custom interests
+              Chọn từ danh sách phổ biến hoặc thêm sở thích của riêng bạn
             </p>
             
             {/* Predefined Interest Buttons */}
             <div className="p-4 bg-gray-50 rounded-lg border">
-              <p className="text-sm font-medium mb-3">Popular Interests:</p>
+              <p className="text-sm font-medium mb-3">Sở Thích Phổ Biến:</p>
               <div className="flex flex-wrap gap-2">
                 {predefinedInterests.map((interest) => (
                   <Button
@@ -165,26 +165,26 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
 
             {/* Custom Interest Input */}
             <div>
-              <Label className="text-sm mb-2 block">Add Custom Interest:</Label>
+              <Label className="text-sm mb-2 block">Thêm Sở Thích Khác:</Label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter a custom interest..."
+                  placeholder="Nhập sở thích của bạn..."
                   value={interestInput}
                   onChange={(e) => setInterestInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddInterest()}
                 />
-                <Button onClick={handleAddInterest}>Add</Button>
+                <Button onClick={handleAddInterest}>Thêm</Button>
               </div>
             </div>
 
             {/* Selected Interests Display */}
             <div>
               <Label className="text-sm mb-2 block">
-                Selected Interests ({preferences.interests.length}):
+                Sở Thích Đã Chọn ({preferences.interests.length}):
               </Label>
               <div className="flex flex-wrap gap-2 min-h-[40px] p-3 bg-white border rounded-lg">
                 {preferences.interests.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">No interests selected yet</p>
+                  <p className="text-sm text-muted-foreground italic">Chưa chọn sở thích nào</p>
                 ) : (
                   preferences.interests.map((interest) => (
                     <Badge key={interest} variant="secondary" className="flex items-center gap-1 text-sm py-1">
@@ -204,10 +204,10 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
           <div className="space-y-3">
             <Label className="text-base font-semibold flex items-center gap-2">
               <Settings className="w-4 h-4" />
-              Skill Level
+              Trình Độ
             </Label>
             <p className="text-sm text-muted-foreground">
-              How would you rate your overall skill level?
+              Bạn đánh giá trình độ của mình như thế nào?
             </p>
             <div className="flex gap-2">
               {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
@@ -220,7 +220,7 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
                   }}
                   className="flex-1"
                 >
-                  {level.charAt(0).toUpperCase() + level.slice(1)}
+                  {level === 'beginner' ? 'Mới bắt đầu' : level === 'intermediate' ? 'Trung bình' : 'Nâng cao'}
                 </Button>
               ))}
             </div>
@@ -230,10 +230,10 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
           <div className="space-y-3">
             <Label className="text-base font-semibold flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              Available Time: {preferences.availableTime} minutes/day
+              Thời Gian Rảnh: {preferences.availableTime} phút/ngày
             </Label>
             <p className="text-sm text-muted-foreground">
-              How much time can you dedicate to tasks each day?
+              Bạn có thể dành bao nhiêu thời gian mỗi ngày?
             </p>
             <Input
               type="range"
@@ -248,8 +248,8 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>15 min</span>
-              <span>4 hours</span>
+              <span>15 phút</span>
+              <span>4 giờ</span>
             </div>
           </div>
 
@@ -257,19 +257,19 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
           <div className="space-y-3">
             <Label className="text-base font-semibold flex items-center gap-2">
               <Target className="w-4 h-4" />
-              Your Goals
+              Mục Tiêu
             </Label>
             <p className="text-sm text-muted-foreground">
-              What do you want to achieve? (e.g., learn AI, improve health)
+              Bạn muốn đạt được điều gì? (VD: học AI, cải thiện sức khỏe)
             </p>
             <div className="flex gap-2">
               <Input
-                placeholder="Add a goal..."
+                placeholder="Thêm mục tiêu..."
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddGoal()}
               />
-              <Button onClick={handleAddGoal}>Add</Button>
+              <Button onClick={handleAddGoal}>Thêm</Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {preferences.goals.map((goal) => (
@@ -282,26 +282,26 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
                 </Badge>
               ))}
               {preferences.goals.length === 0 && (
-                <p className="text-sm text-muted-foreground italic">No goals added yet</p>
+                <p className="text-sm text-muted-foreground italic">Chưa thêm mục tiêu nào</p>
               )}
             </div>
           </div>
 
           {/* Topics to Avoid */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">Topics to Avoid (Optional)</Label>
+            <Label className="text-base font-semibold">Chủ Đề Muốn Tránh (Tùy chọn)</Label>
             <p className="text-sm text-muted-foreground">
-              Are there any topics you prefer not to work on?
+              Có chủ đề nào bạn không muốn làm việc không?
             </p>
             <div className="flex gap-2">
               <Input
-                placeholder="e.g., public speaking, physical exercise"
+                placeholder="VD: nói trước đám đông, tập thể dục"
                 value={avoidInput}
                 onChange={(e) => setAvoidInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddAvoid()}
               />
               <Button onClick={handleAddAvoid} variant="outline">
-                Add
+                Thêm
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -315,7 +315,7 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
                 </Badge>
               ))}
               {(!preferences.avoidTopics || preferences.avoidTopics.length === 0) && (
-                <p className="text-sm text-muted-foreground italic">No topics to avoid</p>
+                <p className="text-sm text-muted-foreground italic">Không có chủ đề cần tránh</p>
               )}
             </div>
           </div>
@@ -326,7 +326,7 @@ export const UserPreferencesEditor: React.FC<UserPreferencesEditorProps> = ({ on
             variant={saved ? "outline" : "default"}
           >
             <Save className="w-4 h-4 mr-2" />
-            {saved ? "Preferences Saved ✓" : "Save Preferences"}
+            {saved ? "Đã Lưu Tùy Chỉnh ✓" : "Lưu Tùy Chỉnh"}
           </Button>
         </CardContent>
       </Card>

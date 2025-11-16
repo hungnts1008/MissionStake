@@ -111,12 +111,130 @@ export const mockMissions: Mission[] = [
     userName: 'Test User',
     userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
     status: 'active',
-    progress: 40,
+    progress: 75,
     difficulty: 'easy',
     category: 'Học tập',
     participants: 1,
     supporters: 12,
-    evidences: []
+    evidences: [
+      {
+        id: 'e_demo_1',
+        date: '01/11/2024',
+        type: 'image',
+        url: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600',
+        description: 'Tuần 1: Hoàn thành cuốn "Đắc Nhân Tâm" - 320 trang. Ghi chú và tóm tắt 10 bài học quan trọng.',
+        status: 'approved',
+        userVotes: [
+          {
+            userId: 'user_2',
+            userName: 'Nguyễn Văn A',
+            vote: 'approve',
+            timestamp: '01/11/2024 20:15'
+          },
+          {
+            userId: 'user_3',
+            userName: 'Trần Thị B',
+            vote: 'approve',
+            timestamp: '01/11/2024 21:30'
+          }
+        ],
+        aiVerification: {
+          result: 'approve',
+          confidence: 92,
+          reason: 'Ảnh chụp sách rõ ràng, có ghi chú chi tiết và chứng minh đã đọc kỹ. Nội dung tóm tắt phù hợp với sách.',
+          timestamp: '01/11/2024 19:45'
+        },
+        finalVerdict: {
+          result: 'approved',
+          aiWeight: 60,
+          userWeight: 40,
+          penalizedUsers: [],
+          timestamp: '01/11/2024 22:00'
+        }
+      },
+      {
+        id: 'e_demo_2',
+        date: '08/11/2024',
+        type: 'image',
+        url: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=600',
+        description: 'Tuần 2: Hoàn thành "Atomic Habits" - 285 trang. Áp dụng 3 thói quen nhỏ hàng ngày.',
+        status: 'approved',
+        userVotes: [
+          {
+            userId: 'user_4',
+            userName: 'Lê Minh C',
+            vote: 'approve',
+            timestamp: '08/11/2024 18:20'
+          },
+          {
+            userId: 'user_5',
+            userName: 'Phạm Thu D',
+            vote: 'approve',
+            timestamp: '08/11/2024 19:00'
+          },
+          {
+            userId: 'user_6',
+            userName: 'Hoàng Văn E',
+            vote: 'approve',
+            timestamp: '08/11/2024 20:15'
+          }
+        ],
+        aiVerification: {
+          result: 'approve',
+          confidence: 95,
+          reason: 'Bằng chứng xuất sắc với ảnh sách, ghi chú chi tiết và kế hoạch hành động cụ thể. Thể hiện sự đọc hiểu sâu sắc.',
+          timestamp: '08/11/2024 17:50'
+        },
+        finalVerdict: {
+          result: 'approved',
+          aiWeight: 60,
+          userWeight: 40,
+          penalizedUsers: [],
+          timestamp: '08/11/2024 21:00'
+        }
+      },
+      {
+        id: 'e_demo_3',
+        date: '15/11/2024',
+        type: 'image',
+        url: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600',
+        description: 'Tuần 3: Hoàn thành "Thinking, Fast and Slow" - 450 trang. Viết bài review dài 1000 từ về các khái niệm System 1 và System 2.',
+        status: 'approved',
+        userVotes: [
+          {
+            userId: 'user_7',
+            userName: 'Đặng Văn F',
+            vote: 'approve',
+            timestamp: '15/11/2024 22:30'
+          },
+          {
+            userId: 'user_8',
+            userName: 'Vũ Thị G',
+            vote: 'approve',
+            timestamp: '15/11/2024 23:15'
+          },
+          {
+            userId: 'user_9',
+            userName: 'Bùi Thị H',
+            vote: 'approve',
+            timestamp: '16/11/2024 08:00'
+          }
+        ],
+        aiVerification: {
+          result: 'approve',
+          confidence: 88,
+          reason: 'Ảnh chụp sách và bài review chi tiết. Nội dung thể hiện hiểu biết sâu về tâm lý học nhận thức.',
+          timestamp: '15/11/2024 21:45'
+        },
+        finalVerdict: {
+          result: 'approved',
+          aiWeight: 60,
+          userWeight: 40,
+          penalizedUsers: [],
+          timestamp: '16/11/2024 10:00'
+        }
+      }
+    ]
   },
   {
     id: '3',

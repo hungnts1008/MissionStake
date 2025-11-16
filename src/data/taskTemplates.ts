@@ -63,6 +63,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 30,
     basePoints: 60,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh món ăn đã hoàn thành, có thể kèm ảnh nguyên liệu/quá trình nấu',
+      examples: [
+        'Ảnh món ăn hoàn thành được bày trí đẹp mắt',
+        'Ảnh các nguyên liệu đã chuẩn bị',
+        'Ảnh quá trình nấu nướng'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Hoàn thành ít nhất 1 món ăn đầy đủ dinh dưỡng',
+      'Món ăn có carb, protein và rau/củ',
+      'Tự tay chế biến từ nguyên liệu tươi (không dùng đồ ăn sẵn)'
+    ],
+    detailedSteps: [
+      '1. Lên menu món ăn (ví dụ: cơm, thịt kho, canh rau)',
+      '2. Chuẩn bị nguyên liệu: mua sắm hoặc kiểm tra tủ lạnh',
+      '3. Chụp ảnh nguyên liệu',
+      '4. Sơ chế: rửa rau, thái thịt, ướp gia vị',
+      '5. Nấu nướng theo công thức',
+      '6. Bày trí món ăn đẹp mắt',
+      '7. Chụp ảnh món ăn hoàn thành',
+      '8. Upload bằng chứng'
+    ],
     variations: [
       {
         level: 15,
@@ -85,6 +110,30 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 25,
     basePoints: 40,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh lịch trình/kế hoạch tuần (có thể viết tay hoặc digital)',
+      examples: [
+        'Ảnh sổ tay với kế hoạch từng ngày trong tuần',
+        'Screenshot ứng dụng lịch (Google Calendar, Notion...)',
+        'Ảnh bảng whiteboard với timeline tuần'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Lập kế hoạch đầy đủ cho 7 ngày',
+      'Có ít nhất 3 mục tiêu chính trong tuần',
+      'Phân bổ thời gian cụ thể cho từng hoạt động'
+    ],
+    detailedSteps: [
+      '1. Xem lại tuần trước: đã làm được gì, còn thiếu gì',
+      '2. Liệt kê các công việc/mục tiêu tuần này',
+      '3. Ưu tiên theo tầm quan trọng (dùng ma trận Eisenhower)',
+      '4. Phân bổ vào từng ngày (cân đối workload)',
+      '5. Đặt deadline cụ thể cho từng task',
+      '6. Chụp ảnh kế hoạch',
+      '7. Upload bằng chứng'
+    ]
   },
 
   // ===== HỌC TẬP =====
@@ -98,6 +147,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 50,
     basePoints: 70,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh sách đang đọc + số trang hoặc ghi chú/tóm tắt nội dung',
+      examples: [
+        'Ảnh bìa sách + số trang đã đọc (đánh dấu bookmark)',
+        'Ảnh ghi chú về nội dung chính của các trang vừa đọc',
+        'Screenshot ebook/Kindle với thời gian đọc hoặc % hoàn thành'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Đọc liên tục ít nhất 30 phút',
+      'Đọc tối thiểu 15-20 trang (tùy font chữ)',
+      'Có ghi chú hoặc highlight ít nhất 3 ý chính'
+    ],
+    detailedSteps: [
+      '1. Chọn sách muốn đọc (phi hư cấu/hư cấu, tùy sở thích)',
+      '2. Tìm không gian yên tĩnh, tắt thông báo điện thoại',
+      '3. Chụp ảnh bìa sách + vị trí bắt đầu đọc',
+      '4. Đọc tập trung 30 phút',
+      '5. Ghi chú 3-5 ý chính hoặc câu trích dẫn hay',
+      '6. Đánh dấu trang cuối cùng đã đọc',
+      '7. Chụp ảnh ghi chú/vị trí kết thúc',
+      '8. Upload bằng chứng'
+    ],
     variations: [
       {
         level: 20,
@@ -120,6 +194,32 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 60,
     basePoints: 60,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh danh sách 20 từ vựng + nghĩa + ví dụ câu (viết tay hoặc digital)',
+      examples: [
+        'Ảnh notebook với 20 từ vựng, nghĩa tiếng Việt, ví dụ',
+        'Screenshot app học từ vựng (Anki, Quizlet...) với 20 từ mới',
+        'Ảnh flashcards đã tạo cho 20 từ'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Học đúng 20 từ vựng tiếng Anh mới',
+      'Mỗi từ có: nghĩa tiếng Việt + phiên âm + ví dụ câu',
+      'Làm quiz/test để kiểm tra đã nhớ ít nhất 15/20 từ'
+    ],
+    detailedSteps: [
+      '1. Chọn chủ đề từ vựng (business, travel, daily life...)',
+      '2. Liệt kê 20 từ mới từ sách/app/website',
+      '3. Tra cứu: nghĩa, phiên âm, từ loại',
+      '4. Tạo ví dụ câu cho mỗi từ (context)',
+      '5. Đọc to từng từ 3 lần để nhớ phát âm',
+      '6. Viết flashcard hoặc nhập vào app',
+      '7. Làm quiz/test kiểm tra',
+      '8. Chụp ảnh danh sách từ vựng',
+      '9. Upload bằng chứng'
+    ],
     variations: [
       {
         level: 30,
@@ -142,6 +242,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 40,
     basePoints: 80,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Screenshot video học + tiến độ hoặc ghi chú những điểm chính',
+      examples: [
+        'Screenshot video đang xem với timestamp (phút thứ 20/45)',
+        'Ảnh ghi chú tóm tắt nội dung video',
+        'Screenshot certificate/badge hoàn thành bài học (nếu có)'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Xem ít nhất 1 video/bài học dài 30-60 phút',
+      'Ghi chú ít nhất 5 điểm chính từ video',
+      'Hiểu và có thể tóm tắt nội dung'
+    ],
+    detailedSteps: [
+      '1. Chọn platform (Coursera, Udemy, YouTube, edX...)',
+      '2. Tìm khóa học/video về chủ đề muốn học',
+      '3. Chuẩn bị notebook/app ghi chú',
+      '4. Xem video, pause để ghi chú các điểm quan trọng',
+      '5. Làm quiz/exercise nếu có',
+      '6. Tóm tắt nội dung bằng lời của mình',
+      '7. Chụp screenshot video + ghi chú',
+      '8. Upload bằng chứng'
+    ]
   },
   {
     id: 'study_4',
@@ -390,6 +515,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 50,
     basePoints: 50,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh không gian thiền hoặc screenshot app thiền định với thời gian hoàn thành',
+      examples: [
+        'Screenshot app thiền (Headspace, Calm, Insight Timer...) hiển thị 15 phút',
+        'Ảnh không gian thiền với đệm ngồi, nến, nhang',
+        'Screenshot timer 15 phút + ghi chú cảm nhận sau thiền'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Thiền liên tục 15 phút không bị gián đoạn',
+      'Tập trung vào hơi thở hoặc mantra',
+      'Không sử dụng điện thoại (trừ app hướng dẫn thiền)'
+    ],
+    detailedSteps: [
+      '1. Chọn không gian yên tĩnh, thoáng mát',
+      '2. Ngồi thoải mái (bàn tay úp, lưng thẳng)',
+      '3. Đặt timer 15 phút hoặc mở app thiền',
+      '4. Nhắm mắt, tập trung vào hơi thở',
+      '5. Hít vào (đếm 4 giây) - Giữ (4 giây) - Thở ra (4 giây)',
+      '6. Khi tâm trí lang thang, nhẹ nhàng đưa về hơi thở',
+      '7. Kết thúc: từ từ mở mắt, giãn cơ',
+      '8. Chụp ảnh app/không gian và upload'
+    ],
     variations: [
       {
         level: 25,
@@ -411,6 +561,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 20,
     basePoints: 30,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh bình nước/chai nước đã uống hết hoặc screenshot app theo dõi nước',
+      examples: [
+        'Ảnh 4 chai nước 500ml đã uống (tổng 2 lít)',
+        'Screenshot app theo dõi nước (Water Reminder, Plant Nanny...)',
+        'Ảnh bình nước 2 lít với vạch đo đã về 0'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Uống đủ 2 lít nước lọc trong ngày (8 ly x 250ml)',
+      'Phân bổ đều trong ngày (không uống cùng lúc)',
+      'Ưu tiên nước lọc, tránh nước ngọt/có ga'
+    ],
+    detailedSteps: [
+      '1. Chuẩn bị bình nước 2 lít hoặc chai 500ml',
+      '2. Đặt reminder mỗi 1-2 giờ để uống nước',
+      '3. Uống 1-2 ly khi thức dậy (detox)',
+      '4. Uống trước mỗi bữa ăn 30 phút',
+      '5. Uống trong khi làm việc, tập luyện',
+      '6. Theo dõi lượng nước qua app hoặc vạch kẻ',
+      '7. Cuối ngày: chụp ảnh bình nước rỗng/app',
+      '8. Upload bằng chứng'
+    ]
   },
   {
     id: 'health_3',
@@ -422,6 +597,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 25,
     basePoints: 100,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Screenshot app theo dõi giấc ngủ hoặc ảnh đồng hồ/báo thức sáng',
+      examples: [
+        'Screenshot app Sleep Cycle/Fitbit với 8h ngủ',
+        'Ảnh màn hình báo thức sáng (giờ thức dậy)',
+        'Screenshot health app với sleep data đủ 8h'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Ngủ liên tục 7-9 tiếng (không tỉnh giữa chừng)',
+      'Đi ngủ trước 12h đêm',
+      'Không dùng điện thoại 30 phút trước ngủ'
+    ],
+    detailedSteps: [
+      '1. Tắt điện thoại/laptop 30 phút trước ngủ',
+      '2. Tối ưu phòng ngủ: tối, mát, yên tĩnh',
+      '3. Đặt báo thức cho sáng mai (8h sau)',
+      '4. Bật app theo dõi giấc ngủ (nếu có)',
+      '5. Đi ngủ trước 12h đêm',
+      '6. Ngủ 7-9 tiếng không gián đoạn',
+      '7. Sáng: chụp screenshot app/ảnh báo thức',
+      '8. Upload bằng chứng'
+    ]
   },
   {
     id: 'health_4',
@@ -433,6 +633,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 10,
     maxLevel: 30,
     basePoints: 200,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Ảnh phiếu khám/kết quả xét nghiệm hoặc bill thanh toán phòng khám (có thể che thông tin cá nhân)',
+      examples: [
+        'Ảnh phiếu khám bệnh với các chỉ số: huyết áp, cân nặng, chiều cao',
+        'Ảnh kết quả xét nghiệm máu (che tên nếu cần)',
+        'Ảnh bill/hóa đơn phòng khám'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Thăm khám tại phòng khám/bệnh viện uy tín',
+      'Kiểm tra ít nhất 3 chỉ số: huyết áp, cân nặng, mạch',
+      'Tư vấn với bác sĩ về kết quả'
+    ],
+    detailedSteps: [
+      '1. Đặt lịch khám tại phòng khám/bệnh viện',
+      '2. Nhịn ăn 8-12h trước nếu có xét nghiệm máu',
+      '3. Đến khám đúng giờ, mang theo CMND/BHYT',
+      '4. Đo các chỉ số: huyết áp, chiều cao, cân nặng, mạch',
+      '5. Xét nghiệm máu/nước tiểu (nếu cần)',
+      '6. Tư vấn với bác sĩ về kết quả',
+      '7. Chụp ảnh phiếu khám/kết quả (che info cá nhân)',
+      '8. Upload bằng chứng'
+    ]
   },
 
   // ===== TÀI CHÍNH =====
@@ -446,6 +671,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 40,
     basePoints: 40,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh sổ ghi chép chi tiêu hoặc screenshot app quản lý tài chính',
+      examples: [
+        'Ảnh sổ tay với danh sách chi tiêu ngày hôm nay',
+        'Screenshot app Misa, Money Lover, Excel với chi tiết từng khoản',
+        'Ảnh bảng excel chi tiêu được cập nhật'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Ghi đầy đủ mọi khoản chi (từ ly cà phê đến hóa đơn lớn)',
+      'Phân loại theo danh mục (ăn uống, di chuyển, giải trí...)',
+      'Tính tổng chi tiêu trong ngày'
+    ],
+    detailedSteps: [
+      '1. Chọn công cụ: sổ tay hoặc app (Money Lover, Misa...)',
+      '2. Sau mỗi lần chi tiêu, ghi ngay lập tức',
+      '3. Ghi rõ: thời gian, mục đích, số tiền, hình thức (tiền mặt/chuyển khoản)',
+      '4. Phân loại vào danh mục (food, transport, entertainment...)',
+      '5. Cuối ngày: tổng hợp và kiểm tra lại',
+      '6. So sánh với ngân sách đã đặt',
+      '7. Chụp ảnh sổ chi tiêu hoặc screenshot app',
+      '8. Upload bằng chứng'
+    ]
   },
   {
     id: 'finance_2',
@@ -457,6 +707,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 10,
     maxLevel: 50,
     basePoints: 100,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Ảnh/screenshot bảng kế hoạch tài chính chi tiết theo tháng',
+      examples: [
+        'Screenshot Excel/Google Sheets với budget breakdown',
+        'Ảnh sổ tay với kế hoạch thu/chi/tiết kiệm',
+        'Screenshot app ngân sách (YNAB, EveryDollar...)'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Có bảng thu nhập dự kiến trong tháng',
+      'Phân bổ chi tiêu theo danh mục (50/30/20 rule)',
+      'Đặt mục tiêu tiết kiệm cụ thể (số tiền + mục đích)'
+    ],
+    detailedSteps: [
+      '1. Tính tổng thu nhập tháng (lương, thu nhập phụ)',
+      '2. Liệt kê các khoản chi cố định (nhà, điện nước, internet...)',
+      '3. Ước tính chi tiêu biến đổi (ăn uống, giải trí, quần áo)',
+      '4. Áp dụng quy tắc 50/30/20: 50% nhu cầu thiết yếu, 30% muốn, 20% tiết kiệm',
+      '5. Đặt mục tiêu tiết kiệm cụ thể (VD: 3 triệu/tháng cho quỹ khẩn cấp)',
+      '6. Tạo budget buffer (dự phòng) 5-10%',
+      '7. Chụp ảnh kế hoạch tài chính',
+      '8. Upload bằng chứng'
+    ]
   },
   {
     id: 'finance_3',
@@ -492,6 +767,31 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 35,
     basePoints: 60,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Chụp ảnh trang nhật ký vừa viết (có thể che nội dung riêng tư nếu cần)',
+      examples: [
+        'Ảnh trang nhật ký viết tay với ít nhất 200 từ',
+        'Screenshot app nhật ký điện tử (Day One, Journey...)',
+        'Ảnh notebook với entry ngày hôm nay'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Viết ít nhất 200 từ (khoảng 1 trang A5)',
+      'Ghi lại ít nhất 3 sự kiện/cảm xúc trong ngày',
+      'Viết chân thành, không copy từ nguồn khác'
+    ],
+    detailedSteps: [
+      '1. Chọn nơi yên tĩnh, thời điểm cuối ngày',
+      '2. Mở sổ nhật ký hoặc app',
+      '3. Ghi ngày tháng, thời tiết (nếu muốn)',
+      '4. Viết về 3 điều: sự kiện nổi bật, cảm xúc, bài học',
+      '5. Thêm chi tiết: người gặp, nơi đến, điều đã làm',
+      '6. Kết thúc với suy nghĩ hoặc mục tiêu ngày mai',
+      '7. Chụp ảnh (che info nhạy cảm nếu cần)',
+      '8. Upload bằng chứng'
+    ]
   },
   {
     id: 'creative_2',
@@ -584,6 +884,30 @@ export const taskTemplates: TaskTemplate[] = [
     minLevel: 1,
     maxLevel: 30,
     basePoints: 50,
+    evidenceRequirements: {
+      type: 'image',
+      description: 'Screenshot lịch sử cuộc gọi với thành viên gia đình (che số điện thoại nếu cần)',
+      examples: [
+        'Screenshot call log với thời gian cuộc gọi ≥ 10 phút',
+        'Screenshot video call (Zalo, FaceTime...) với gia đình',
+        'Ảnh màn hình cuộc gọi đang diễn ra'
+      ],
+      minimumCount: 1
+    },
+    successCriteria: [
+      'Gọi điện ít nhất 10 phút',
+      'Nói chuyện chân thành, hỏi thăm sức khỏe/tình hình',
+      'Lắng nghe và chia sẻ'
+    ],
+    detailedSteps: [
+      '1. Chọn thời điểm gia đình rảnh (tối sau bữa tối)',
+      '2. Gọi video call (Zalo, FaceTime) nếu có thể',
+      '3. Hỏi thăm sức khỏe, công việc của từng người',
+      '4. Chia sẻ về cuộc sống của mình',
+      '5. Trò chuyện ít nhất 10-20 phút',
+      '6. Chụp screenshot cuộc gọi (thời lượng)',
+      '7. Upload bằng chứng'
+    ]
   },
   {
     id: 'social_2',

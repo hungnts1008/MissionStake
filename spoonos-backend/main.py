@@ -9,9 +9,15 @@ from typing import List, Optional
 import os
 from dotenv import load_dotenv
 from neo_service import neo_service
+import google.generativeai as genai
 
 # Load environment variables
 load_dotenv()
+
+# Configure Gemini AI
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # Initialize FastAPI
 app = FastAPI(
@@ -23,7 +29,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,6 +66,29 @@ class Mission(BaseModel):
     rewards: dict
     tags: List[str]
     reasoning: str
+
+class EvidenceVerificationRequest(BaseModel):
+    evidenceType: str
+    description: str
+    date: str
+    missionTitle: str
+    missionDescription: str
+
+class EvidenceVerificationResponse(BaseModel):
+    result: str  # 'approve' or 'reject'
+    confidence: int
+    reason: str
+
+class MissionEvaluationRequest(BaseModel):
+    missionTitle: str
+    missionDescription: str
+    evidences: List[dict]
+    totalDays: int
+
+class MissionEvaluationResponse(BaseModel):
+    overallScore: int
+    aiAssessment: str
+    passedRequirements: bool
 
 # ========== Health Check ==========
 @app.get("/")
@@ -128,6 +157,128 @@ async def generate_personalized_missions(request: PersonalizedMissionRequest):
         return missions
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ========== Gemini AI Endpoints ==========
+@app.post("/api/gemini/verify-evidence", response_model=EvidenceVerificationResponse)
+async def verify_evidence(request: EvidenceVerificationRequest):
+    """
+    Xác minh bằng chứng hoàn thành nhiệm vụ bằng Gemini AI
+    """
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+    
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        
+        prompt = f"""Bạn là một AI chuyên đánh giá bằng chứng hoàn thành nhiệm vụ.
+
+NHIỆM VỤ:
+Tiêu đề: {request.missionTitle}
+Mô tả: {request.missionDescription}
+
+BẰNG CHỨNG CẦN ĐÁNH GIÁ:
+- Loại: {request.evidenceType}
+- Mô tả: {request.description}
+- Ngày nộp: {request.date}
+
+YÊU CẦU:
+1. Đánh giá bằng chứng này có phù hợp với nhiệm vụ không (approve hoặc reject)
+2. Cho điểm độ tin cậy từ 0-100
+3. Giải thích lý do ngắn gọn (1-2 câu)
+
+Trả về JSON theo format:
+{{
+  "result": "approve" hoặc "reject",
+  "confidence": số từ 0-100,
+  "reason": "lý do ngắn gọn"
+}}"""
+
+        response = model.generate_content(prompt)
+        text = response.text
+        
+        # Extract JSON from response
+        import json
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', text)
+        if not json_match:
+            raise ValueError("Invalid JSON response from AI")
+        
+        result = json.loads(json_match.group(0))
+        
+        return EvidenceVerificationResponse(
+            result=result.get("result", "reject"),
+            confidence=min(100, max(0, result.get("confidence", 0))),
+            reason=result.get("reason", "Không có lý do cụ thể")
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calling Gemini API: {str(e)}")
+
+@app.post("/api/gemini/evaluate-mission", response_model=MissionEvaluationResponse)
+async def evaluate_mission(request: MissionEvaluationRequest):
+    """
+    Đánh giá tổng thể hoàn thành nhiệm vụ bằng Gemini AI
+    """
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+    
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash-lite')
+        
+        approved_evidences = [e for e in request.evidences if e.get("status") == "approved"]
+        evidence_summary = "\n".join([
+            f"{i+1}. [{e.get('date')}] {e.get('description')} (AI confidence: {e.get('aiVerification', {}).get('confidence', 0)}%)"
+            for i, e in enumerate(approved_evidences)
+        ])
+        
+        prompt = f"""Bạn là một AI chuyên đánh giá hoàn thành nhiệm vụ tự hoàn thiện.
+
+NHIỆM VỤ:
+Tiêu đề: {request.missionTitle}
+Mô tả: {request.missionDescription}
+Thời gian cam kết: {request.totalDays} ngày
+
+BẰNG CHỨNG ĐÃ ĐƯỢC DUYỆT ({len(approved_evidences)}/{len(request.evidences)}):
+{evidence_summary or 'Không có bằng chứng nào được duyệt'}
+
+YÊU CẦU:
+1. Đánh giá tổng thể mức độ hoàn thành nhiệm vụ (điểm 0-100)
+2. Nhận xét chi tiết về chất lượng thực hiện
+3. Quyết định PASS (≥70 điểm) hay FAIL (<70 điểm)
+
+Tiêu chí chấm điểm:
+- Số lượng bằng chứng so với thời gian cam kết
+- Chất lượng bằng chứng (độ tin cậy AI)
+- Tính nhất quán và kiên trì
+- Mức độ đạt mục tiêu ban đầu
+
+Trả về JSON theo format:
+{{
+  "overallScore": số từ 0-100,
+  "aiAssessment": "nhận xét chi tiết 2-3 câu",
+  "passedRequirements": true hoặc false
+}}"""
+
+        response = model.generate_content(prompt)
+        text = response.text
+        
+        # Extract JSON from response
+        import json
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', text)
+        if not json_match:
+            raise ValueError("Invalid JSON response from AI")
+        
+        result = json.loads(json_match.group(0))
+        
+        return MissionEvaluationResponse(
+            overallScore=min(100, max(0, result.get("overallScore", 0))),
+            aiAssessment=result.get("aiAssessment", "Không có nhận xét"),
+            passedRequirements=result.get("passedRequirements", False)
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error calling Gemini API: {str(e)}")
 
 # ========== NEO Endpoints ==========
 @app.get("/api/neo/status")

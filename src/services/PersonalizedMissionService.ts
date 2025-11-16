@@ -29,17 +29,109 @@ export class PersonalizedMissionService {
   private genAI: GoogleGenerativeAI;
   private model: any;
   private maxRerolls = 3; // Maximum rerolls per day
+  
+  // Rate limiting: Track API calls
+  private apiCallHistory: number[] = []; // timestamps of API calls
+  private readonly MAX_CALLS_PER_MINUTE = 15; // Limit to 15 calls per minute
+  private readonly MAX_CALLS_PER_HOUR = 60; // Limit to 60 calls per hour
+  
+  // Caching: Store recent responses
+  private cache: Map<string, { data: MissionSuggestion[], timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      console.error("Gemini API key not found in environment variables");
-      throw new Error("Gemini API key not configured");
+      console.error("Không tìm thấy Gemini API key trong biến môi trường");
+      throw new Error("Gemini API key chưa được cấu hình");
     }
     
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.5-flash (latest, fastest, most stable)
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use gemini-2.5-flash-lite (lightweight, fastest, most stable)
+    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+  }
+  
+  /**
+   * Check if we're within rate limits
+   */
+  private checkRateLimit(): { allowed: boolean; reason?: string } {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60 * 1000;
+    const oneHourAgo = now - 60 * 60 * 1000;
+    
+    // Clean old entries
+    this.apiCallHistory = this.apiCallHistory.filter(time => time > oneHourAgo);
+    
+    // Check minute limit
+    const callsInLastMinute = this.apiCallHistory.filter(time => time > oneMinuteAgo).length;
+    if (callsInLastMinute >= this.MAX_CALLS_PER_MINUTE) {
+      return { 
+        allowed: false, 
+        reason: `⚠️ Đã đạt giới hạn ${this.MAX_CALLS_PER_MINUTE} lần gọi/phút. Vui lòng đợi.` 
+      };
+    }
+    
+    // Check hour limit
+    const callsInLastHour = this.apiCallHistory.length;
+    if (callsInLastHour >= this.MAX_CALLS_PER_HOUR) {
+      return { 
+        allowed: false, 
+        reason: `⚠️ Đã đạt giới hạn ${this.MAX_CALLS_PER_HOUR} lần gọi/giờ. Vui lòng đợi.` 
+      };
+    }
+    
+    return { allowed: true };
+  }
+  
+  /**
+   * Track an API call
+   */
+  private trackApiCall() {
+    this.apiCallHistory.push(Date.now());
+    console.log(`📊 API Calls - Last minute: ${this.apiCallHistory.filter(t => t > Date.now() - 60000).length}/${this.MAX_CALLS_PER_MINUTE}, Last hour: ${this.apiCallHistory.length}/${this.MAX_CALLS_PER_HOUR}`);
+  }
+  
+  /**
+   * Get cache key for preferences
+   */
+  private getCacheKey(preferences: UserPreferences, count: number): string {
+    return JSON.stringify({
+      interests: preferences.interests.sort(),
+      skillLevel: preferences.skillLevel,
+      availableTime: preferences.availableTime,
+      goals: preferences.goals.sort(),
+      count
+    });
+  }
+  
+  /**
+   * Check cache for existing response
+   */
+  private checkCache(key: string): MissionSuggestion[] | null {
+    const cached = this.cache.get(key);
+    if (cached) {
+      const age = Date.now() - cached.timestamp;
+      if (age < this.CACHE_DURATION) {
+        console.log(`✅ Using cached missions (${Math.floor(age / 1000)}s old)`);
+        return cached.data;
+      } else {
+        this.cache.delete(key);
+      }
+    }
+    return null;
+  }
+  
+  /**
+   * Save to cache
+   */
+  private saveCache(key: string, data: MissionSuggestion[]) {
+    this.cache.set(key, { data, timestamp: Date.now() });
+    
+    // Limit cache size to 10 entries
+    if (this.cache.size > 10) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
   }
 
   /**
@@ -49,49 +141,56 @@ export class PersonalizedMissionService {
     preferences: UserPreferences,
     count: number = 3
   ): Promise<MissionSuggestion[]> {
+    // Check cache first
+    const cacheKey = this.getCacheKey(preferences, count);
+    const cached = this.checkCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    // Check rate limit
+    const rateLimitCheck = this.checkRateLimit();
+    if (!rateLimitCheck.allowed) {
+      throw new Error(rateLimitCheck.reason);
+    }
+    
     try {
-      const prompt = `You are a mission generator for SpoonOS, a gamified productivity app. Generate ${count} personalized missions for this user:
+      // Track this API call
+      this.trackApiCall();
+      
+      const prompt = `Tạo CHÍNH XÁC ${count} nhiệm vụ (${count} objects) bằng TIẾNG VIỆT:
 
-**User Profile:**
-- Interests: ${preferences.interests.join(", ")}
-- Skill Level: ${preferences.skillLevel}
-- Available Time: ${preferences.availableTime} minutes per day
-- Goals: ${preferences.goals.join(", ")}
-${preferences.avoidTopics ? `- Avoid Topics: ${preferences.avoidTopics.join(", ")}` : ""}
+Sở thích: ${preferences.interests.join(", ")}
+Trình độ: ${preferences.skillLevel}
+Thời gian: ${preferences.availableTime} phút/ngày
+Mục tiêu: ${preferences.goals.join(", ")}
 
-**Requirements:**
-1. Each mission should be specific, actionable, and achievable
-2. Match the user's interests and skill level
-3. Fit within their available time
-4. Support their stated goals
-5. Vary in difficulty and type
+QUAN TRỌNG: Phải có ĐỦ ${count} nhiệm vụ trong array. Mỗi nhiệm vụ NGẮN GỌN (description max 50 từ).
 
-**Output Format (JSON array only, no markdown):**
-[
-  {
-    "title": "Clear, action-oriented title",
-    "description": "Detailed 2-3 sentence description explaining what to do and why",
-    "category": "learning|health|creative|social|work|other",
-    "difficulty": "easy|medium|hard",
-    "estimatedTime": <number in minutes>,
-    "xpReward": <100 for easy, 250 for medium, 500 for hard>,
-    "coinReward": <50 for easy, 100 for medium, 200 for hard>,
-    "tags": ["tag1", "tag2", "tag3"],
-    "reasoning": "Why this mission fits the user's profile"
-  }
-]
+Format (CHỈ trả về JSON array):
+[{"title":"Tiêu đề","description":"Mô tả ngắn","category":"learning","difficulty":"easy","estimatedTime":30,"xpReward":100,"coinReward":50,"tags":["tag1","tag2"],"reasoning":"Lý do"}]
 
-Generate exactly ${count} diverse missions that would genuinely help this user grow.`;
+Tạo ${count} nhiệm vụ khác nhau, không trùng lặp.`;
 
-      console.log("🤖 Calling Gemini API for personalized missions...");
-      const result = await this.model.generateContent(prompt);
+      console.log("🤖 Đang gọi Gemini API để tạo nhiệm vụ cá nhân hóa...");
+      const result = await this.model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 2048,
+          topP: 0.95,
+        }
+      });
       const response = await result.response;
       const text = response.text();
 
-      console.log("📥 Gemini API response received");
+      console.log("📥 Đã nhận phản hồi từ Gemini API");
+      console.log("Phản hồi gốc:", text);
 
       // Extract JSON from response (handle markdown code blocks)
-      let jsonText = text;
+      let jsonText = text.trim();
+      
+      // Remove markdown code blocks if present
       const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
       if (jsonMatch) {
         jsonText = jsonMatch[1];
@@ -102,7 +201,54 @@ Generate exactly ${count} diverse missions that would genuinely help this user g
         }
       }
 
-      const missions = JSON.parse(jsonText);
+      // Clean up the JSON text more aggressively
+      jsonText = jsonText
+        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+        .replace(/\/\/[^\n]*/g, '') // Remove single-line comments
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .replace(/\r\n/g, '\n') // Normalize line endings
+        .trim();
+
+      console.log("JSON đã làm sạch:", jsonText);
+
+      let missions;
+      try {
+        missions = JSON.parse(jsonText);
+      } catch (parseError) {
+        console.error("Lỗi phân tích JSON:", parseError);
+        console.error("Văn bản JSON lỗi:", jsonText);
+        
+        // Try one more aggressive cleanup
+        let veryCleanJson = jsonText
+          .replace(/[\n\r\t]/g, ' ') // Remove all newlines and tabs
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .replace(/,\s*([}\]])/g, '$1'); // Remove trailing commas again
+        
+        // Check if JSON is incomplete (missing closing brackets)
+        const openBrackets = (veryCleanJson.match(/\[/g) || []).length;
+        const closeBrackets = (veryCleanJson.match(/\]/g) || []).length;
+        const openBraces = (veryCleanJson.match(/\{/g) || []).length;
+        const closeBraces = (veryCleanJson.match(/\}/g) || []).length;
+        
+        // Try to fix incomplete JSON
+        if (openBraces > closeBraces) {
+          // Add missing properties and closing braces
+          const missingBraces = openBraces - closeBraces;
+          for (let i = 0; i < missingBraces; i++) {
+            if (!veryCleanJson.includes('"reasoning"')) {
+              veryCleanJson += ',"reasoning":"Phù hợp với mục tiêu"';
+            }
+            veryCleanJson += '}';
+          }
+        }
+        if (openBrackets > closeBrackets) {
+          veryCleanJson += ']';
+        }
+        
+        console.log("Đang thử JSON đã làm sạch hoàn toàn:", veryCleanJson);
+        missions = JSON.parse(veryCleanJson);
+      }
 
       // Transform to our format and add IDs
       const transformedMissions: MissionSuggestion[] = missions.map((mission: any, index: number) => ({
@@ -117,15 +263,19 @@ Generate exactly ${count} diverse missions that would genuinely help this user g
           coins: mission.coinReward
         },
         tags: mission.tags || preferences.interests.slice(0, 3),
-        reasoning: mission.reasoning || "AI-generated mission based on your profile"
+        reasoning: mission.reasoning || "Nhiệm vụ được tạo bởi AI dựa trên hồ sơ của bạn"
       }));
 
-      console.log(`✅ Generated ${transformedMissions.length} personalized missions`);
+      console.log(`✅ Đã tạo ${transformedMissions.length} nhiệm vụ cá nhân hóa`);
+      
+      // Save to cache
+      this.saveCache(cacheKey, transformedMissions);
+      
       return transformedMissions;
 
     } catch (error) {
-      console.error("❌ Error generating missions with Gemini:", error);
-      throw new Error(`Failed to generate missions: ${error instanceof Error ? error.message : "Unknown error"}`);
+      console.error("❌ Lỗi khi tạo nhiệm vụ với Gemini:", error);
+      throw new Error(`Không thể tạo nhiệm vụ: ${error instanceof Error ? error.message : "Lỗi không xác định"}`);
     }
   }
 
@@ -137,48 +287,57 @@ Generate exactly ${count} diverse missions that would genuinely help this user g
     preferences: UserPreferences,
     rejectionReason?: string
   ): Promise<MissionSuggestion> {
+    // Check rate limit
+    const rateLimitCheck = this.checkRateLimit();
+    if (!rateLimitCheck.allowed) {
+      throw new Error(rateLimitCheck.reason);
+    }
+    
     try {
-      const prompt = `You are rerolling a mission for a SpoonOS user who rejected this mission:
+      // Track this API call
+      this.trackApiCall();
+      
+      const prompt = `Bạn đang tạo lại nhiệm vụ cho người dùng SpoonOS đã từ chối nhiệm vụ này:
 
-**Rejected Mission:**
-- Title: ${currentMission.title}
-- Description: ${currentMission.description}
-- Category: ${currentMission.category}
-- Difficulty: ${currentMission.difficulty}
-${rejectionReason ? `\n**Why Rejected:** ${rejectionReason}` : ""}
+**Nhiệm Vụ Bị Từ Chối:**
+- Tiêu đề: ${currentMission.title}
+- Mô tả: ${currentMission.description}
+- Danh mục: ${currentMission.category}
+- Độ khó: ${currentMission.difficulty}
+${rejectionReason ? `\n**Lý do từ chối:** ${rejectionReason}` : ""}
 
-**User Profile:**
-- Interests: ${preferences.interests.join(", ")}
-- Skill Level: ${preferences.skillLevel}
-- Available Time: ${preferences.availableTime} minutes
-- Goals: ${preferences.goals.join(", ")}
+**Hồ Sơ Người Dùng:**
+- Sở thích: ${preferences.interests.join(", ")}
+- Trình độ: ${preferences.skillLevel}
+- Thời gian rảnh: ${preferences.availableTime} phút
+- Mục tiêu: ${preferences.goals.join(", ")}
 
-Generate ONE alternative mission that:
-1. Is COMPLETELY DIFFERENT from the rejected mission
-2. Better matches their preferences
-3. Addresses the rejection reason (if provided)
-4. Has similar difficulty and time commitment
+Tạo MỘT nhiệm vụ thay thế:
+1. HOÀN TOÀN KHÁC với nhiệm vụ bị từ chối
+2. Phù hợp hơn với sở thích
+3. Giải quyết lý do từ chối
+4. Độ khó và thời gian tương tự
 
-**Output Format (JSON object only, no markdown):**
+**CHỈ trả về JSON object ĐÚNG chuẩn, KHÔNG có markdown, KHÔNG có trailing comma:**
 {
-  "title": "string",
-  "description": "string",
-  "category": "learning|health|creative|social|work|other",
-  "difficulty": "easy|medium|hard",
-  "estimatedTime": <number>,
-  "xpReward": <number>,
-  "coinReward": <number>,
+  "title": "Tiêu đề bằng tiếng Việt",
+  "description": "Mô tả bằng tiếng Việt",
+  "category": "learning",
+  "difficulty": "easy",
+  "estimatedTime": 30,
+  "xpReward": 100,
+  "coinReward": 50,
   "tags": ["tag1", "tag2"],
-  "reasoning": "Why this is better than the rejected mission"
+  "reasoning": "Lý do bằng tiếng Việt"
 }`;
 
-      console.log("🔄 Rerolling mission with Gemini...");
+      console.log("🔄 Đang tạo lại nhiệm vụ với Gemini...");
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
       // Extract JSON
-      let jsonText = text;
+      let jsonText = text.trim();
       const jsonMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
       if (jsonMatch) {
         jsonText = jsonMatch[1];
@@ -188,6 +347,13 @@ Generate ONE alternative mission that:
           jsonText = directMatch[0];
         }
       }
+
+      // Clean up the JSON text
+      jsonText = jsonText
+        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+        .replace(/\/\/.*/g, '') // Remove single-line comments
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+        .trim();
 
       const newMission = JSON.parse(jsonText);
 
@@ -203,15 +369,15 @@ Generate ONE alternative mission that:
           coins: newMission.coinReward
         },
         tags: newMission.tags || preferences.interests.slice(0, 3),
-        reasoning: newMission.reasoning || "Rerolled based on your feedback"
+        reasoning: newMission.reasoning || "Được tạo lại dựa trên phản hồi của bạn"
       };
 
-      console.log("✅ Successfully rerolled mission");
+      console.log("✅ Đã tạo lại nhiệm vụ thành công");
       return transformedMission;
 
     } catch (error) {
-      console.error("❌ Error rerolling mission:", error);
-      throw new Error(`Failed to reroll mission: ${error instanceof Error ? error.message : "Unknown error"}`);
+      console.error("❌ Lỗi khi tạo lại nhiệm vụ:", error);
+      throw new Error(`Không thể tạo lại nhiệm vụ: ${error instanceof Error ? error.message : "Lỗi không xác định"}`);
     }
   }
 
@@ -227,33 +393,32 @@ Generate ONE alternative mission that:
     }
   ): Promise<MissionSuggestion[]> {
     try {
-      const prompt = `Generate 3 contextual mission recommendations for SpoonOS:
+      const prompt = `Tạo 3 gợi ý nhiệm vụ theo ngữ cảnh cho SpoonOS:
 
-**User Profile:**
-- Interests: ${preferences.interests.join(", ")}
-- Skill Level: ${preferences.skillLevel}
-- Available Time: ${preferences.availableTime} minutes
+**Hồ Sơ:**
+- Sở thích: ${preferences.interests.join(", ")}
+- Trình độ: ${preferences.skillLevel}
+- Thời gian rảnh: ${preferences.availableTime} phút
 
-**Current Context:**
-- Time of Day: ${context.timeOfDay}
-- Day: ${context.dayOfWeek}
-- Recently Completed: ${context.recentCompletions.join(", ") || "None"}
+**Ngữ Cảnh Hiện Tại:**
+- Thời điểm: ${context.timeOfDay}
+- Ngày: ${context.dayOfWeek}
+- Vừa hoàn thành: ${context.recentCompletions.join(", ") || "Không có"}
 
-**Context-Aware Suggestions:**
-- Morning: High-energy, learning, creative tasks
-- Afternoon: Productive work, skill-building
-- Evening: Relaxing, social, reflection tasks
-- Consider day of week (weekend vs weekday)
-- Avoid similar missions to recently completed ones
+**Gợi Ý Theo Ngữ Cảnh:**
+- Sáng: Năng lượng cao, học tập, sáng tạo
+- Chiều: Làm việc hiệu quả, xây dựng kỹ năng
+- Tối: Thư giãn, giao lưu, suy ngẫm
+- Tránh nhiệm vụ giống vừa hoàn thành
 
-Generate 3 missions perfectly suited to this moment. Return JSON array format (same as before).`;
+Tạo 3 nhiệm vụ phù hợp bằng TIẾNG VIỆT. CHỈ trả về JSON array ĐÚNG chuẩn, KHÔNG có markdown.`;
 
-      console.log("🎯 Getting contextual recommendations...");
+      console.log("🎯 Đang lấy gợi ý theo ngữ cảnh...");
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
-      let jsonText = text;
+      let jsonText = text.trim();
       const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
       if (jsonMatch) {
         jsonText = jsonMatch[1];
@@ -263,6 +428,13 @@ Generate 3 missions perfectly suited to this moment. Return JSON array format (s
           jsonText = directMatch[0];
         }
       }
+
+      // Clean up the JSON text
+      jsonText = jsonText
+        .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+        .replace(/\/\/.*/g, '') // Remove single-line comments
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+        .trim();
 
       const missions = JSON.parse(jsonText);
 
@@ -278,14 +450,14 @@ Generate 3 missions perfectly suited to this moment. Return JSON array format (s
           coins: mission.coinReward
         },
         tags: mission.tags || preferences.interests.slice(0, 3),
-        reasoning: mission.reasoning || `Contextual mission for ${context.timeOfDay}`
+        reasoning: mission.reasoning || `Nhiệm vụ phù hợp cho ${context.timeOfDay === 'morning' ? 'buổi sáng' : context.timeOfDay === 'afternoon' ? 'buổi chiều' : 'buổi tối'}`
       }));
 
-      console.log("✅ Generated contextual recommendations");
+      console.log("✅ Đã tạo gợi ý theo ngữ cảnh");
       return transformedMissions;
 
     } catch (error) {
-      console.error("❌ Error getting contextual recommendations:", error);
+      console.error("❌ Lỗi khi lấy gợi ý theo ngữ cảnh:", error);
       // Fallback to regular generation
       return this.generatePersonalizedMissions(preferences, 3);
     }
@@ -308,7 +480,7 @@ Generate 3 missions perfectly suited to this moment. Return JSON array format (s
    */
   trackReroll(userId: string): void {
     // In production, this would update database/storage
-    console.log(`User ${userId} used a reroll`);
+    console.log(`Người dùng ${userId} đã sử dụng lượt tạo lại`);
   }
 }
 

@@ -44,6 +44,9 @@ type Props = {
   onAcceptTask: (mission: Mission) => void;
   setUser: (user: User) => void;
   userPreferences?: UserPreferences;
+  // NOTE: AI generated missions state từ App component
+  aiGeneratedMissions: MissionSuggestion[];
+  setAiGeneratedMissions: (missions: MissionSuggestion[]) => void;
 };
 
 // Mock user profile - Trong thực tế sẽ lấy từ database
@@ -129,17 +132,18 @@ const timeOfDayLabels: Record<TimeOfDay, string> = {
 
 const dayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
-export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, userPreferences }: Props) {
+export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, userPreferences, aiGeneratedMissions, setAiGeneratedMissions }: Props) {
   const [userProfile] = useState<UserProfile>(() => createMockUserProfile(user));
   const [suggestedTasks, setSuggestedTasks] = useState<SuggestedTask[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<TaskCategory | 'all'>('all');
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   
-  // Personalized missions state
-  const [personalizedMissions, setPersonalizedMissions] = useState<MissionSuggestion[]>([]);
+  // Personalized missions state - dùng props từ App (không reset khi chuyển trang)
   const [loadingPersonalized, setLoadingPersonalized] = useState(false);
   const [rerollsRemaining, setRerollsRemaining] = useState(3);
-  const [showPersonalized, setShowPersonalized] = useState(false);
+  const [showPersonalized, setShowPersonalized] = useState(aiGeneratedMissions.length > 0);
+  const [lastGenerateTime, setLastGenerateTime] = useState<number>(0);
+  const GENERATE_COOLDOWN = 3000; // 3 seconds cooldown between generates
 
   useEffect(() => {
     // Sử dụng TaskProgressionService để lấy available tasks
@@ -175,12 +179,25 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
     
     // NOTE: Reroll không dùng localStorage - reset khi reload trang
     setRerollsRemaining(3); // Always 3 rerolls (reset on page reload)
-  }, [userProfile, user.id]);
+    
+    // Hiển thị personalized missions nếu đã tạo
+    setShowPersonalized(aiGeneratedMissions.length > 0);
+  }, [userProfile, user.id, aiGeneratedMissions.length]);
 
   // Generate personalized missions
   const handleGeneratePersonalized = async () => {
+    // Check cooldown
+    const now = Date.now();
+    const timeSinceLastGenerate = now - lastGenerateTime;
+    if (timeSinceLastGenerate < GENERATE_COOLDOWN && lastGenerateTime > 0) {
+      const remainingSeconds = Math.ceil((GENERATE_COOLDOWN - timeSinceLastGenerate) / 1000);
+      alert(`⏳ Vui lòng đợi ${remainingSeconds} giây trước khi tạo lại!`);
+      return;
+    }
+    
     try {
       setLoadingPersonalized(true);
+      setLastGenerateTime(now);
       
       // Check if user has set preferences
       if (!userPreferences || userPreferences.interests.length === 0) {
@@ -190,11 +207,17 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
       }
       
       const missions = await personalizedMissionService.generatePersonalizedMissions(userPreferences, 3);
-      setPersonalizedMissions(missions);
+      setAiGeneratedMissions(missions);
       setShowPersonalized(true);
     } catch (error) {
       console.error('Error generating personalized missions:', error);
-      alert('Failed to generate personalized missions. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('giới hạn')) {
+        // Rate limit error - show specific message
+        alert(errorMessage);
+      } else {
+        alert('Failed to generate personalized missions. Please try again.');
+      }
     } finally {
       setLoadingPersonalized(false);
     }
@@ -206,16 +229,26 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
       alert('You have used all your rerolls for today!');
       return;
     }
+    
+    // Check cooldown
+    const now = Date.now();
+    const timeSinceLastGenerate = now - lastGenerateTime;
+    if (timeSinceLastGenerate < GENERATE_COOLDOWN && lastGenerateTime > 0) {
+      const remainingSeconds = Math.ceil((GENERATE_COOLDOWN - timeSinceLastGenerate) / 1000);
+      alert(`⏳ Vui lòng đợi ${remainingSeconds} giây trước khi reroll!`);
+      return;
+    }
 
     try {
       setLoadingPersonalized(true);
+      setLastGenerateTime(now);
       
       if (!userPreferences || userPreferences.interests.length === 0) {
         alert('Preferences not found. Please set them in your Profile.');
         return;
       }
       
-      const currentMission = personalizedMissions[index];
+      const currentMission = aiGeneratedMissions[index];
       
       const newMission = await personalizedMissionService.rerollMission(
         currentMission,
@@ -224,16 +257,22 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
       );
       
       // Update missions array
-      const updatedMissions = [...personalizedMissions];
+      const updatedMissions = [...aiGeneratedMissions];
       updatedMissions[index] = newMission;
-      setPersonalizedMissions(updatedMissions);
+      setAiGeneratedMissions(updatedMissions);
       
       // Track reroll and update counter
       personalizedMissionService.trackReroll(user.id);
       setRerollsRemaining(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error rerolling mission:', error);
-      alert('Failed to reroll mission. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('giới hạn')) {
+        // Rate limit error - show specific message
+        alert(errorMessage);
+      } else {
+        alert('Failed to reroll mission. Please try again.');
+      }
     } finally {
       setLoadingPersonalized(false);
     }
@@ -284,6 +323,17 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
 
     // NOTE: Thêm mission vào danh sách
     onAcceptTask(newMission);
+    
+    // Remove from AI generated missions if it's from personalized list
+    const aiMissionIndex = aiGeneratedMissions.findIndex(m => m.title === task.title);
+    if (aiMissionIndex !== -1) {
+      const updatedMissions = aiGeneratedMissions.filter((_, idx) => idx !== aiMissionIndex);
+      setAiGeneratedMissions(updatedMissions);
+      
+      if (updatedMissions.length === 0) {
+        setShowPersonalized(false);
+      }
+    }
     
     // NOTE: Hiển thị thông báo thành công
     alert(`✅ Đã nhận nhiệm vụ: ${task.title}\n\n💰 Đã đặt cược: ${stakeAmount} coins\n🎁 Phần thưởng khi hoàn thành: ${stakeAmount * 2} coins + 50 uy tín\n📊 Độ khó: ${task.difficulty}\n⏱️ Thời gian ước tính: ${task.estimatedTime} phút`);
@@ -493,9 +543,9 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
               </div>
             </div>
 
-            {showPersonalized && personalizedMissions.length > 0 && (
+            {showPersonalized && aiGeneratedMissions.length > 0 && (
               <div className="grid gap-5 mt-6">
-                {personalizedMissions.map((mission, index) => {
+                {aiGeneratedMissions.map((mission: MissionSuggestion, index: number) => {
                   // Map difficulty levels
                   const difficultyMap: Record<string, 'beginner' | 'intermediate' | 'advanced' | 'expert'> = {
                     'easy': 'beginner',
@@ -543,8 +593,8 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
                                 <div className="flex items-center gap-2 text-purple-700">
                                   <Target size={18} />
                                   <div>
-                                    <p className="text-xs font-semibold text-purple-600">Kinh nghiệm</p>
-                                    <p className="font-bold">{mission.rewards.xp} XP</p>
+                                    <p className="text-xs font-semibold text-purple-600">Đặt cược</p>
+                                    <p className="font-bold">{mission.difficulty === 'easy' ? 500 : mission.difficulty === 'medium' ? 1000 : 1500} coins</p>
                                   </div>
                                 </div>
                               </div>
@@ -553,7 +603,7 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
                                   <Coins size={18} />
                                   <div>
                                     <p className="text-xs font-semibold text-amber-600">Phần thưởng</p>
-                                    <p className="font-bold">{mission.rewards.coins} coins</p>
+                                    <p className="font-bold">{(mission.difficulty === 'easy' ? 500 : mission.difficulty === 'medium' ? 1000 : 1500) * 2} coins</p>
                                   </div>
                                 </div>
                               </div>
@@ -655,91 +705,131 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
             <h2 className="font-bold text-gray-800 text-xl">📋 Tất cả nhiệm vụ được đề xuất</h2>
           </div>
           
-          <div className="grid gap-5">
-            {filteredTasks.map((task) => (
+          <div className="grid gap-6">
+            {filteredTasks.map((task) => {
+              const stakeAmount = task.difficulty === 'beginner' ? 500 : task.difficulty === 'intermediate' ? 1000 : 1500;
+              const rewardAmount = stakeAmount * 2;
+              const profitAmount = stakeAmount;
+
+              return (
               <Card 
                 key={task.id} 
-                className={`border-2 hover:shadow-2xl hover:scale-[1.01] transition-all cursor-pointer bg-gradient-to-br from-white to-gray-50 ${
-                  expandedTask === task.id ? 'ring-2 ring-purple-400 shadow-2xl scale-[1.01]' : 'border-gray-200'
+                className={`group border-0 overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white ${
+                  expandedTask === task.id ? 'ring-4 ring-purple-300 shadow-2xl' : 'shadow-lg hover:scale-[1.02]'
                 }`}
-                onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
               >
-                {/* Top gradient bar */}
-                <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-                
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1 space-y-3">
-                      {/* Badges */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge className={`${categoryColors[task.category]} border font-semibold px-3 py-1`}>
+                {/* Gradient Header Bar */}
+                <div className="relative h-32 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden">
+                  <div className="absolute inset-0 bg-black/10"></div>
+                  <div className="absolute -right-10 -top-10 size-40 bg-white/10 rounded-full blur-2xl"></div>
+                  <div className="absolute -left-10 -bottom-10 size-40 bg-white/10 rounded-full blur-2xl"></div>
+                  
+                  <CardContent className="relative h-full flex items-center justify-between p-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <Badge className={`${categoryColors[task.category]} border-2 font-bold px-3 py-1.5 shadow-sm`}>
                           {task.category}
                         </Badge>
-                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 font-semibold px-3 py-1">
+                        <Badge className="bg-white/90 backdrop-blur text-purple-700 border-0 font-bold px-3 py-1.5 shadow-sm">
                           Lv {userProfile.currentLevel[task.category] || 1}
                         </Badge>
-                        <Badge className={`${difficultyColors[task.difficulty]} border-2 font-semibold px-3 py-1`}>
+                        <Badge className={`${difficultyColors[task.difficulty]} border-2 font-bold px-3 py-1.5 shadow-sm`}>
                           {difficultyLabels[task.difficulty]}
                         </Badge>
-                        <Badge className="bg-gradient-to-r from-yellow-100 to-amber-100 border-2 border-amber-200 text-amber-700 font-bold px-3 py-1">
-                          <Award size={14} className="mr-1" />
-                          +{task.points} XP
-                        </Badge>
                       </div>
-                      
-                      {/* Title */}
-                      <CardTitle className="text-xl font-bold text-gray-800">{task.title}</CardTitle>
-                      
-                      {/* Description */}
-                      <CardDescription className="text-base text-gray-600 leading-relaxed">
-                        {task.description}
-                      </CardDescription>
+                      <h3 className="text-2xl font-bold text-white drop-shadow-lg line-clamp-2">{task.title}</h3>
                     </div>
-                    
-                    {/* Points badge */}
-                    <div className="ml-4 flex-shrink-0">
-                      <div className="bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 text-white rounded-2xl w-20 h-20 flex flex-col items-center justify-center shadow-xl border-2 border-yellow-300">
-                        <span className="text-2xl font-bold">{task.points}</span>
-                        <span className="text-xs font-semibold">XP</span>
+
+                    {/* Floating Reward Badge */}
+                    <div className="ml-6 bg-white rounded-2xl shadow-2xl p-4 min-w-[120px]">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mb-1">
+                          <Coins className="text-amber-500" size={24} />
+                        </div>
+                        <p className="text-3xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                          +{profitAmount}
+                        </p>
+                        <p className="text-xs text-gray-600 font-bold">coins lợi nhuận</p>
                       </div>
+                    </div>
+                  </CardContent>
+                </div>
+
+                {/* Main Content */}
+                <CardContent className="p-6 space-y-5">
+                  {/* Description */}
+                  <p className="text-gray-700 leading-relaxed">{task.description}</p>
+
+                  {/* Info Stats Row */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
+                      <Clock className="text-blue-600" size={18} />
+                      <span className="text-sm font-bold text-blue-700">{task.estimatedTime} phút</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-full border border-purple-200">
+                      <Target className="text-purple-600" size={18} />
+                      <span className="text-sm font-bold text-purple-700">Level {task.requiredLevel}+</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full border border-green-200">
+                      <TrendingUp className="text-green-600" size={18} />
+                      <span className="text-sm font-bold text-green-700">{task.matchScore}% phù hợp</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-200">
+                      <Award className="text-indigo-600" size={18} />
+                      <span className="text-sm font-bold text-indigo-700">+{task.points} XP</span>
                     </div>
                   </div>
 
-                  {/* Quick Info Stats */}
-                  <div className="grid grid-cols-3 gap-3 mt-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-blue-700">
-                        <Clock size={18} />
-                        <div>
-                          <p className="text-xs font-semibold text-blue-600">Thời gian</p>
-                          <p className="font-bold">{task.estimatedTime} phút</p>
-                        </div>
+                  {/* Financial Summary */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-5 border-2 border-gray-200">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 font-semibold mb-1">Đặt cược</p>
+                        <p className="text-2xl font-black text-red-600">-{stakeAmount}</p>
+                        <p className="text-xs text-gray-500">coins</p>
+                      </div>
+                      <div className="text-center border-x-2 border-gray-300">
+                        <p className="text-xs text-gray-600 font-semibold mb-1">Phần thưởng</p>
+                        <p className="text-2xl font-black text-emerald-600">+{rewardAmount}</p>
+                        <p className="text-xs text-gray-500">coins</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 font-semibold mb-1">Lợi nhuận</p>
+                        <p className="text-2xl font-black text-green-600">+{profitAmount}</p>
+                        <p className="text-xs text-gray-500">coins</p>
                       </div>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-purple-700">
-                        <Target size={18} />
-                        <div>
-                          <p className="text-xs font-semibold text-purple-600">Yêu cầu</p>
-                          <p className="font-bold">Level {task.requiredLevel}+</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-green-700">
-                        <TrendingUp size={18} />
-                        <div>
-                          <p className="text-xs font-semibold text-green-600">Phù hợp</p>
-                          <p className="font-bold">{task.matchScore}%</p>
-                        </div>
-                      </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <Button 
+                        className="flex-1 bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 hover:from-green-700 hover:via-emerald-700 hover:to-green-700 text-white font-bold h-12 shadow-lg"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handleAcceptTask(task);
+                        }}
+                        disabled={!!task.prerequisites}
+                      >
+                        <CheckCircle2 size={20} className="mr-2" />
+                        Nhận nhiệm vụ
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        className="border-2 border-purple-300 hover:bg-purple-50 hover:border-purple-400 font-semibold h-12 px-6"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          setExpandedTask(expandedTask === task.id ? null : task.id);
+                        }}
+                      >
+                        {expandedTask === task.id ? '▲ Thu gọn' : '▼ Chi tiết'}
+                      </Button>
                     </div>
                   </div>
-                </CardHeader>
+                </CardContent>
 
-              {/* Expanded Content */}
+              {/* Expanded Content - Additional Details */}
               {expandedTask === task.id && (
-                <CardContent className="border-t pt-4">
+                <CardContent className="border-t-2 border-purple-200 pt-6 bg-gradient-to-b from-purple-50/30 to-white">
                   <Tabs defaultValue="prerequisites" className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="prerequisites" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -853,35 +943,11 @@ export function AITaskSuggestions({ user, onNavigate, onAcceptTask, setUser, use
                       </div>
                     </TabsContent>
                   </Tabs>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 mt-6">
-                    <Button 
-                      className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold h-12 shadow-lg"
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        handleAcceptTask(task);
-                      }}
-                      disabled={!!task.prerequisites}
-                    >
-                      <CheckCircle2 size={18} className="mr-2" />
-                      ✅ Nhận nhiệm vụ
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        setExpandedTask(null);
-                      }}
-                      className="border-2 border-gray-300 hover:bg-gray-100 font-semibold h-12 px-6"
-                    >
-                      Đóng
-                    </Button>
-                  </div>
                 </CardContent>
               )}
             </Card>
-            ))}
+            );
+            })}
           </div>
         </div>
 
