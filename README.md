@@ -20,10 +20,8 @@
 - [🌟 Giới thiệu](#-giới-thiệu)
 - [❓ Vấn đề & Giải pháp](#-vấn-đề--giải-pháp)
 - [✨ Tính năng nổi bật](#-tính-năng-nổi-bật)
-- [🏗️ Kiến trúc hệ thống](#️-kiến-trúc-hệ-thống)
 - [🛠️ Công nghệ sử dụng](#️-công-nghệ-sử-dụng)
 - [🚀 Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
-- [🤝 Đóng góp](#-đóng-góp)
 - [📄 License](#-license)
 - [👥 Đội ngũ phát triển](#-đội-ngũ-phát-triển)
 
@@ -97,6 +95,8 @@ Nhiều người gặp khó khăn trong việc:
 - **Profile công khai**: Thể hiện thành tích, level, achievements
 - **Like & Comment**: Tương tác, động viên nhau
 - **Follow System**: Theo dõi những người bạn ngưỡng mộ
+- **Tham gia hoạt động cùng nhau**: Join vào nhiệm vụ của người khác, làm cùng nhau
+- **Stake khả năng hoàn thành**: Đặt cược bằng coins vào khả năng hoàn thành nhiệm vụ của bản thân hoặc người khác, tăng động lực và tính cạnh tranh
 
 ### 📊 Dashboard & Analytics
 
@@ -111,48 +111,6 @@ Nhiều người gặp khó khăn trong việc:
 - **Responsive**: Hoạt động mượt mà trên mọi thiết bị (desktop, tablet, mobile)
 - **Animations**: Hiệu ứng mượt mà, tăng trải nghiệm người dùng
 - **Accessibility**: Tuân thủ WCAG, hỗ trợ screen reader
-
----
-
-## 🏗️ Kiến trúc hệ thống
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     USER INTERFACE                       │
-│         React 18 + TypeScript + TailwindCSS              │
-└──────────────────────┬──────────────────────────────────┘
-                       │
-          ┌────────────┴────────────┐
-          │                         │
-┌─────────▼──────────┐   ┌─────────▼──────────┐
-│   GEMINI AI API    │   │   BACKEND API      │
-│  (Google Cloud)    │   │  (Python FastAPI)  │
-│                    │   │                    │
-│ • Task Generation  │   │ • User Auth        │
-│ • Personalization  │   │ • Mission CRUD     │
-│ • Smart Recommend  │   │ • Blockchain Sync  │
-└────────────────────┘   └─────────┬──────────┘
-                                   │
-                         ┌─────────▼──────────┐
-                         │  NEO N3 BLOCKCHAIN │
-                         │    (TestNet)       │
-                         │                    │
-                         │ • Smart Contract   │
-                         │ • Mission Verify   │
-                         │ • Reward System    │
-                         └────────────────────┘
-```
-
-### 🔄 Quy trình hoạt động
-
-1. **User tạo preferences** → Lưu vào State
-2. **Click "Tạo nhiệm vụ AI"** → Gửi preferences đến Gemini API
-3. **AI phân tích** → Trả về 3-5 nhiệm vụ phù hợp
-4. **User chọn nhiệm vụ** → Lưu vào Local State + Backend
-5. **Hoàn thành nhiệm vụ** → Upload evidence (ảnh/video/text)
-6. **Backend verify** → Gửi transaction lên NEO Blockchain
-7. **Smart Contract xác nhận** → Cộng XP + Coins + Update Streak
-8. **Dashboard cập nhật** → Hiển thị thành tích mới
 
 ---
 
@@ -308,20 +266,7 @@ npm run dev
 .\create-neo-wallet.bat
 ```
 
-### 🐳 Docker (Coming Soon)
-
-```bash
-# Clone repo
-git clone https://github.com/hungnts1008/MissionStake.git
-cd MissionStake
-
-# Build và chạy với Docker Compose
-docker-compose up -d
-
-# ✅ Truy cập: http://localhost:5173
-```
-
-
+---
 
 ## 🤝 Đóng góp
 
@@ -547,7 +492,6 @@ Nếu bạn thấy dự án này hữu ích, hãy:
 
 [🏠 Về đầu trang](#-spoonos-missionstake) • 
 [🚀 Bắt đầu ngay](#-hướng-dẫn-cài-đặt) • 
-[🤝 Đóng góp](#-đóng-góp) • 
 [📄 License](#-license)
 
 ---
